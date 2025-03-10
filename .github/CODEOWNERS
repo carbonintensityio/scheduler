@@ -1,0 +1,5 @@
+## See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+## for more info on CODEOWNERS file
+
+## code changes will send PR to following users
+* @carbonintensityio/team-scheduling
