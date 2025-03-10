@@ -1,0 +1,49 @@
+name: Build
+
+env:
+  MAVEN_MIRROR: ${{ secrets.MAVEN_MIRROR }}
+  NEXUS_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+  NEXUS_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end -Dno-format"
+
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore:
+      - 'dependabot/**'
+    paths-ignore:
+      - '.github'
+      - '.gitignore'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - '*.md'
+      - '*.adoc'
+      - '*.txt'
+      - '.all-contributorsrc'
+  pull_request:
+    paths-ignore:
+      - '.github'
+      - '.gitignore'
+      - 'CODEOWNERS'
+      - 'LICENSE'
+      - '*.md'
+      - '*.adoc'
+      - '*.txt'
+      - '.all-contributorsrc'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+
+      - name: Build Artifact
+        run: ./mvnw $COMMON_MAVEN_ARGS --file pom.xml verify

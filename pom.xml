@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
+         child.project.url.inherit.append.path="false">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.carbonintensity</groupId>
+        <artifactId>scheduler-parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>support-projects/parent/pom.xml</relativePath>
+    </parent>
+
+    <artifactId>scheduler-project</artifactId>
+    <name>Scheduler - Project POM</name>
+    <packaging>pom</packaging>
+
+    <description>Carbon Intensity Scheduler - Java task scheduler based on carbon intensity</description>
+    <url>https://github.com/carbonintensityio/scheduler</url>
+
+    <developers>
+        <developer>
+            <id>carbonintensityio</id>
+            <name>Carbon Intensity Community</name>
+            <organization>Carbon Intensity</organization>
+            <organizationUrl>https://carbonintensity.io</organizationUrl>
+        </developer>
+    </developers>
+
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
+        <url>https://github.com/carbonintensityio/scheduler</url>
+        <connection>scm:git:git@github.com:carbonintensityio/scheduler.git</connection>
+        <developerConnection>scm:git:git@github.com:carbonintensityio/scheduler.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/carbonintensityio/scheduler/issues/</url>
+    </issueManagement>
+
+    <properties>
+        <maven-enforcer-plugin.phase>validate</maven-enforcer-plugin.phase>
+        <owasp-dependency-check-plugin.version>12.0.0</owasp-dependency-check-plugin.version>
+        <jacoco.version>0.8.12</jacoco.version>
+    </properties>
+
+    <modules>
+
+        <!-- External projects -->
+        <module>support-projects/parent</module>
+        <module>support-projects/ide-config</module>
+        <module>support-projects/enforcer-rules</module>
+
+        <!-- BOMs and parent POM -->
+        <module>bom</module>
+        <module>build-parent</module>
+
+        <!-- Core component -->
+        <module>core</module>
+        <module>execution-planner</module>
+
+        <!-- Extensions -->
+        <module>extensions</module>
+
+        <!-- Integration Tests -->
+        <module>integration-tests</module>
+
+    </modules>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.owasp</groupId>
+                    <artifactId>dependency-check-maven</artifactId>
+                    <version>${owasp-dependency-check-plugin.version}</version>
+                    <configuration>
+                        <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+                        <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+                        <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+                        <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+                        <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>quick-build</id>
+            <activation>
+                <property>
+                    <name>quickly</name>
+                </property>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+                <skipITs>true</skipITs>
+                <skipDocs>true</skipDocs>
+                <enforcer.skip>true</enforcer.skip>
+                <maven-enforcer-plugin.phase>none</maven-enforcer-plugin.phase>
+            </properties>
+            <build>
+                <defaultGoal>clean install</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>owasp-check</id>
+            <activation>
+                <property>
+                    <name>owasp-check</name>
+                </property>
+            </activation>
+            <build>
+                <defaultGoal>org.owasp:dependency-check-maven:check</defaultGoal>
+            </build>
+        </profile>
+        <profile>
+            <id>owasp-report</id>
+            <activation>
+                <property>
+                    <name>owasp-report</name>
+                </property>
+            </activation>
+            <build>
+                <defaultGoal>org.owasp:dependency-check-maven:aggregate</defaultGoal>
+            </build>
+        </profile>
+    </profiles>
+</project>

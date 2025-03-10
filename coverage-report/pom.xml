@@ -1,0 +1,81 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>scheduler-build-parent</artifactId>
+        <groupId>io.carbonintensity</groupId>
+        <version>${revision}</version>
+        <relativePath>../build-parent/pom.xml</relativePath>
+    </parent>
+    <artifactId>scheduler-coverage-report</artifactId>
+    <name>Scheduler Test Coverage Report</name>
+    <description>Aggregates and compiles jacoco test coverage report.
+        This does not currently work on Windows.
+    </description>
+    <packaging>pom</packaging>
+
+    <properties>
+        <format.skip>true</format.skip>
+        <revision>999-SNAPSHOT</revision>
+    </properties>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-classes-and-source</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>${project.basedir}/prepare.sh</executable>
+                    <workingDirectory>${project.basedir}</workingDirectory>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>merge-reports</id>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>merge</goal>
+                        </goals>
+                        <configuration>
+                            <fileSets>
+                                <fileSet>
+                                    <directory>${project.basedir}/../</directory>
+                                    <includes>
+                                        <include>**/target/jacoco.exec</include>
+                                    </includes>
+                                </fileSet>
+                            </fileSets>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <title>Scheduler</title>
+                            <footer>Code Coverage Report for scheduler ${project.version}</footer>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
+</project>
