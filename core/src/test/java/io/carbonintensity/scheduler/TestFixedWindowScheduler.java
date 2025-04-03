@@ -33,6 +33,7 @@ import io.carbonintensity.scheduler.runtime.ImmutableScheduledMethod;
 import io.carbonintensity.scheduler.runtime.ScheduledInvoker;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.runtime.SimpleScheduler;
+import io.carbonintensity.scheduler.runtime.SimpleSchedulerNotifier;
 import io.carbonintensity.scheduler.runtime.impl.rest.CarbonIntensityFileApi;
 import io.carbonintensity.scheduler.test.helper.DisabledDummyCarbonIntensityApi;
 import io.carbonintensity.scheduler.test.helper.MutableClock;
@@ -40,7 +41,7 @@ import io.carbonintensity.scheduler.test.helper.MutableClock;
 class TestFixedWindowScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(TestFixedWindowScheduler.class);
-    public static final long SCHEDULER_WAITING_PERIOD = 101L;
+    public static final long SCHEDULER_WAITING_PERIOD = 101L; // minimum accepted by Awaitility
     private SimpleScheduler scheduler;
     private final CarbonIntensityApi disabledApi = new DisabledDummyCarbonIntensityApi();
 
@@ -294,8 +295,11 @@ class TestFixedWindowScheduler {
 
         Assertions.assertThat(cdl.getCount()).isEqualTo(1);
         scheduler.start();
+        SimpleSchedulerNotifier notifier = new SimpleSchedulerNotifier();
+        notifier.register(scheduler);
+        notifier.nofity();
 
-        Awaitility.waitAtMost(2000L, TimeUnit.MILLISECONDS)
+        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
                 .until(() -> cdl.getCount() == 0);
         Assertions.assertThat(cdl.getCount()).isZero();
     }
