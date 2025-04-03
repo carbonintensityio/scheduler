@@ -5,16 +5,29 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 
+import io.carbonintensity.scheduler.runtime.SimpleSchedulerNotifier;
+
 public class MutableClock extends Clock {
     private final Clock baseClock;
     private Duration offset = Duration.ZERO;
+    private SimpleSchedulerNotifier notifier;
+
+    private MutableClock(Clock baseClock, SimpleSchedulerNotifier notifier) {
+        this.baseClock = baseClock;
+        this.notifier = notifier;
+    }
 
     public MutableClock(Clock baseClock) {
-        this.baseClock = baseClock;
+        this(baseClock, new SimpleSchedulerNotifier());
     }
 
     public void shift(Duration duration) {
         this.offset = this.offset.plus(duration);
+        this.notifier.nofity();
+    }
+
+    public SimpleSchedulerNotifier getNotifier() {
+        return notifier;
     }
 
     @Override
@@ -24,7 +37,7 @@ public class MutableClock extends Clock {
 
     @Override
     public Clock withZone(ZoneId zone) {
-        MutableClock mutableClock = new MutableClock(baseClock.withZone(zone));
+        MutableClock mutableClock = new MutableClock(baseClock.withZone(zone), notifier);
         mutableClock.shift(this.offset);
         return mutableClock;
     }
