@@ -40,7 +40,7 @@ import io.carbonintensity.scheduler.test.helper.MutableClock;
 class TestFixedWindowScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(TestFixedWindowScheduler.class);
-    public static final long SCHEDULER_WAITING_PERIOD = 2000L;
+    public static final long SCHEDULER_WAITING_PERIOD = 101L;
     private SimpleScheduler scheduler;
     private final CarbonIntensityApi disabledApi = new DisabledDummyCarbonIntensityApi();
 
@@ -94,6 +94,7 @@ class TestFixedWindowScheduler {
                 .withScheduledMethod(immutableScheduledMethod)
                 .build(), new SchedulerConfig(), dataFetcher, null,
                 mutableClock);
+        mutableClock.getNotifier().register(scheduler);
 
         scheduler.start();
 
@@ -164,7 +165,7 @@ class TestFixedWindowScheduler {
                     .withScheduledMethod(immutableScheduledMethod)
                     .build(), new SchedulerConfig(), dataFetcher, null,
                     mutableClock);
-
+            mutableClock.getNotifier().register(scheduler);
             scheduler.start();
 
             Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, according to the schedule, it should not run.
@@ -229,7 +230,7 @@ class TestFixedWindowScheduler {
                     .withScheduledMethod(immutableScheduledMethod)
                     .build(), new SchedulerConfig(), dataFetcher, null,
                     mutableClock);
-
+            mutableClock.getNotifier().register(scheduler);
             scheduler.start();
 
             Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, according to the schedule, it should not run.
@@ -294,7 +295,7 @@ class TestFixedWindowScheduler {
         Assertions.assertThat(cdl.getCount()).isEqualTo(1);
         scheduler.start();
 
-        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+        Awaitility.waitAtMost(2000L, TimeUnit.MILLISECONDS)
                 .until(() -> cdl.getCount() == 0);
         Assertions.assertThat(cdl.getCount()).isZero();
     }
@@ -386,7 +387,7 @@ class TestFixedWindowScheduler {
                 .withScheduledMethod(immutableScheduledMethod)
                 .build(), new SchedulerConfig(), dataFetcher, null,
                 mutableClock);
-
+        mutableClock.getNotifier().register(scheduler);
         scheduler.start();
 
         Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, according to the schedule, it should not run.

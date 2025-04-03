@@ -40,7 +40,7 @@ import io.carbonintensity.scheduler.test.helper.MutableClock;
 class TestSuccessiveWindowScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(TestSuccessiveWindowScheduler.class);
-    public static final long SCHEDULER_WAITING_PERIOD = 2000L;
+    public static final long SCHEDULER_WAITING_PERIOD = 101L;
     private SimpleScheduler scheduler;
     private final CarbonIntensityApi disabledApi = new DisabledDummyCarbonIntensityApi();
 
@@ -94,7 +94,7 @@ class TestSuccessiveWindowScheduler {
                 .withScheduledMethod(immutableScheduledMethod)
                 .build(), new SchedulerConfig(), dataFetcher, null,
                 mutableClock);
-
+        mutableClock.getNotifier().register(scheduler);
         scheduler.start();
 
         Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, the greenest window is at 18:16 UTC, so it should not run yet.
@@ -170,11 +170,11 @@ class TestSuccessiveWindowScheduler {
                     .withScheduledMethod(immutableScheduledMethod)
                     .build(), new SchedulerConfig(), dataFetcher, null,
                     mutableClock);
-
+            mutableClock.getNotifier().register(scheduler);
             scheduler.start();
 
             // Wait a few seconds, when using the fallback, it should immediately run
-            Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+            Awaitility.waitAtMost(1500L, TimeUnit.MILLISECONDS)
                     .until(() -> cdl.getCount() == 1);
 
             // After that it should have an interval of 8 hours ((4 + 12) / 2)
