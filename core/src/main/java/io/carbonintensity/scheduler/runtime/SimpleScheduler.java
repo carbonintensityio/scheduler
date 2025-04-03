@@ -863,7 +863,7 @@ public class SimpleScheduler implements Scheduler {
             this.gracePeriod = gracePeriod;
             if (interval < CHECK_PERIOD) {
                 log.warn(
-                        "An every() value less than {} ms is not supported - the scheduled job will be executed with a delay: {}}",
+                        "An every() value less than {} ms is not supported - the scheduled job will be executed with a delay: {}",
                         CHECK_PERIOD, description);
             }
         }
