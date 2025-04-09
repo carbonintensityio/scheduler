@@ -15,9 +15,9 @@ Over a month we can see significant reductions in the carbon footprint of this j
 
 ## Current state
 
-This scheduler uses carbonintensity data delivered by carbonintensity.io. This data is accessible with a free account using the following api-key:
+This scheduler uses carbon intensity data provided by the carbonintensity.io API — a publicly available service developed by the carbonintensity.io team. Access to the API is free and requires an [API key](#requesting-an-apikey).
 
-This scheduler is tested in spring and spring-boot for the zone NL. See issues for actual improvements and feature requests.
+The scheduler is tested with Spring and Spring Boot for the NL (Netherlands) zone. For known issues, planned improvements, and feature requests, please refer to the issues section.
 
 ## How to build
 
