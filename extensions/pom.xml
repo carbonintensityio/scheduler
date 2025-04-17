@@ -15,5 +15,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>spring-boot-starter</module>
+        <module>quarkus</module>
     </modules>
 </project>
