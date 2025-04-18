@@ -17,20 +17,9 @@
             <artifactId>scheduler-core</artifactId>
             <version>${revision}</version>
         </dependency>
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
-            <version>3.21.2</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx</artifactId>
-            <version>3.21.2</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-virtual-threads</artifactId>
             <version>3.21.2</version>
         </dependency>
 
@@ -41,10 +30,7 @@
             <version>3.21.2</version>
             <optional>true</optional>
         </dependency>
-
-
     </dependencies>
-
 
     <build>
         <plugins>

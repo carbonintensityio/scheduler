@@ -17,21 +17,9 @@
             <artifactId>quarkus-green-scheduler</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
-            <version>3.21.2</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-virtual-threads-deployment</artifactId>
-            <version>3.21.2</version>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-deployment</artifactId>
             <version>3.21.2</version>
         </dependency>
     </dependencies>

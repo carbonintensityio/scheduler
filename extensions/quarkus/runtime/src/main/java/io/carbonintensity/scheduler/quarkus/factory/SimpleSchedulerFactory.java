@@ -18,7 +18,7 @@ import io.carbonintensity.scheduler.runtime.impl.rest.CarbonIntensityFileApi;
 /**
  * {@link SimpleScheduler} factory.
  */
-public class SimpleSchedulerFactory implements io.carbonintensity.scheduler.quarkus.factory.SchedulerFactory {
+public class SimpleSchedulerFactory implements SchedulerFactory {
 
     private final Logger logger = LoggerFactory.getLogger(SimpleSchedulerFactory.class);
 

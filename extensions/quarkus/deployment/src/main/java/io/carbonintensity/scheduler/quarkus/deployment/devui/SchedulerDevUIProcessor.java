@@ -3,6 +3,7 @@ package io.carbonintensity.scheduler.quarkus.deployment.devui;
 import java.util.List;
 
 import io.carbonintensity.scheduler.quarkus.deployment.ScheduledBusinessMethodItem;
+import io.carbonintensity.scheduler.quarkus.devui.SchedulerJsonRPCService;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -11,8 +12,6 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
-
-//import io.quarkus.scheduler.runtime.devui.SchedulerJsonRPCService;
 
 public class SchedulerDevUIProcessor {
 
@@ -31,15 +30,14 @@ public class SchedulerDevUIProcessor {
 
         WebComponentPageBuilder logPageBuilder = Page.webComponentPageBuilder()
                 .icon("font-awesome-solid:clock")
-                .title("Scheduler")
+                .title("Green Scheduler")
                 .componentLink("qwc-scheduler-log.js");
         footerPages.produce(new FooterPageBuildItem(logPageBuilder));
     }
 
     @BuildStep
     JsonRPCProvidersBuildItem rpcProvider() {
-        return null;
-        //new JsonRPCProvidersBuildItem(SchedulerJsonRPCService.class);
+        return new JsonRPCProvidersBuildItem(SchedulerJsonRPCService.class);
     }
 
 }

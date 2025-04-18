@@ -9,10 +9,6 @@ public interface SchedulerContext {
 
     List<ScheduledMethod> getScheduledMethods();
 
-    List<ScheduledMethod> getScheduledMethods(String implementation);
-
-    String autoImplementation();
-
     @SuppressWarnings("unchecked")
     default ScheduledInvoker createInvoker(String invokerClassName) {
         try {
