@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.carbonintensity</groupId>
+    <parent>
+        <groupId>io.carbonintensity</groupId>
+        <artifactId>scheduler-extensions-parent</artifactId>
+        <version>${revision}</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
     <artifactId>quarkus-green-scheduler-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <name>Greeting Extension - Parent</name>
+    <name>Quarkus Green Scheduler Extension - Parent</name>
 
     <modules>
         <module>deployment</module>

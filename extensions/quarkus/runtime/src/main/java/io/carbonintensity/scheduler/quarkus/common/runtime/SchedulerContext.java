@@ -3,17 +3,11 @@ package io.carbonintensity.scheduler.quarkus.common.runtime;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
-import com.cronutils.model.CronType;
 import io.carbonintensity.scheduler.runtime.ScheduledInvoker;
-
 
 public interface SchedulerContext {
 
-    CronType getCronType();
-
     List<ScheduledMethod> getScheduledMethods();
-
-    boolean forceSchedulerStart();
 
     List<ScheduledMethod> getScheduledMethods(String implementation);
 

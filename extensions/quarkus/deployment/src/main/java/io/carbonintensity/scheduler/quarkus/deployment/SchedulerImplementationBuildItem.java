@@ -4,7 +4,6 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
-
 /**
  * An extension that provides an implementation of {@link Scheduler} must produce this build item.
  * <p>

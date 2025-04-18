@@ -17,7 +17,7 @@ public final class ScheduledBusinessMethodItem extends MultiBuildItem {
     private final boolean runOnVirtualThread;
 
     public ScheduledBusinessMethodItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> schedules) {
-        this(bean, method,  schedules, false, false);
+        this(bean, method, schedules, false, false);
     }
 
     public ScheduledBusinessMethodItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> schedules,

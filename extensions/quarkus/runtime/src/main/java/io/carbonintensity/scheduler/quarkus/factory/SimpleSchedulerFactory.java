@@ -39,7 +39,7 @@ public class SimpleSchedulerFactory implements io.carbonintensity.scheduler.quar
     }
 
     protected SchedulerContextImpl createSchedulerContext(SchedulerConfig schedulerConfig,
-                                                          List<ScheduledMethod> greenScheduledMethods) {
+            List<ScheduledMethod> greenScheduledMethods) {
         var forceSchedulerStart = SchedulerConfig.StartMode.FORCED.equals(schedulerConfig.getStartMode());
         return new SchedulerContextImpl(greenScheduledMethods, forceSchedulerStart);
     }

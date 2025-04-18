@@ -2,6 +2,7 @@ package io.carbonintensity.scheduler.quarkus.deployment.devui;
 
 import java.util.List;
 
+import io.carbonintensity.scheduler.quarkus.deployment.ScheduledBusinessMethodItem;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -10,7 +11,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
-import io.carbonintensity.scheduler.quarkus.deployment.ScheduledBusinessMethodItem;
+
 //import io.quarkus.scheduler.runtime.devui.SchedulerJsonRPCService;
 
 public class SchedulerDevUIProcessor {

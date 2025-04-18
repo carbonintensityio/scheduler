@@ -2,10 +2,10 @@ package io.carbonintensity.scheduler.quarkus.deployment;
 
 import java.util.concurrent.CompletionStage;
 
-import io.carbonintensity.scheduler.GreenScheduled;
-import io.carbonintensity.scheduler.SkipPredicate;
 import org.jboss.jandex.DotName;
 
+import io.carbonintensity.scheduler.GreenScheduled;
+import io.carbonintensity.scheduler.SkipPredicate;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 

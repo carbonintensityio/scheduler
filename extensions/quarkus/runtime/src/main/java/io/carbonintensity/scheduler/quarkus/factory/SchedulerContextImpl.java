@@ -20,7 +20,7 @@ public class SchedulerContextImpl implements SchedulerContext {
      * @param forceSchedulerStart See {@link SchedulerContext#forceSchedulerStart()}
      */
     public SchedulerContextImpl(List<ScheduledMethod> scheduledMethods,
-                                boolean forceSchedulerStart) {
+            boolean forceSchedulerStart) {
         this.scheduledMethods = scheduledMethods;
         this.forceSchedulerStart = forceSchedulerStart;
     }

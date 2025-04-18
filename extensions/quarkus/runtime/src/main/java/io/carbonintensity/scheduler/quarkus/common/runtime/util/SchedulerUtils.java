@@ -10,15 +10,14 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.function.BiConsumer;
 
-import io.carbonintensity.scheduler.GreenScheduled;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.carbonintensity.scheduler.GreenScheduled;
 import io.quarkus.arc.Arc;
-import io.quarkus.runtime.configuration.DurationConverter;
 import io.smallrye.common.expression.Expression;
 import io.smallrye.common.expression.ResolveContext;
 
@@ -40,7 +39,7 @@ public final class SchedulerUtils {
     public static OptionalLong parseExecutionMaxDelayAsMillis(GreenScheduled scheduled) {
         //String value = lookUpPropertyValue(scheduled.executionMaxDelay());
         //if (value.isBlank()) {
-            return OptionalLong.empty();
+        return OptionalLong.empty();
         //}
         //return OptionalLong.of(parseDurationAsMillis(scheduled, value, "executionMaxDelay"));
     }
@@ -54,7 +53,7 @@ public final class SchedulerUtils {
     public static Duration parseOverdueGracePeriod(GreenScheduled scheduled, Duration defaultDuration) {
         //String value = lookUpPropertyValue(scheduled.overdueGracePeriod());
         //if (value.isEmpty()) {
-            return defaultDuration;
+        return defaultDuration;
         //}
         //return parseDuration(scheduled, value, "overdueGracePeriod");
     }

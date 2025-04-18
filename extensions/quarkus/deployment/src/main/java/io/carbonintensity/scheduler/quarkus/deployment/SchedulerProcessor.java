@@ -10,7 +10,6 @@ import java.lang.reflect.Modifier;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,12 +19,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import io.carbonintensity.scheduler.GreenScheduled;
-import io.carbonintensity.scheduler.ScheduledExecution;
 import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -38,6 +33,15 @@ import org.jboss.logging.Logger;
 import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.parser.CronParser;
 
+import io.carbonintensity.scheduler.GreenScheduled;
+import io.carbonintensity.scheduler.ScheduledExecution;
+import io.carbonintensity.scheduler.quarkus.common.runtime.DefaultInvoker;
+import io.carbonintensity.scheduler.quarkus.common.runtime.MutableScheduledMethod;
+import io.carbonintensity.scheduler.quarkus.common.runtime.SchedulerContext;
+import io.carbonintensity.scheduler.quarkus.common.runtime.util.SchedulerUtils;
+import io.carbonintensity.scheduler.quarkus.runtime.SchedulerConfig;
+import io.carbonintensity.scheduler.quarkus.runtime.SchedulerRecorder;
+import io.carbonintensity.scheduler.quarkus.runtime.SimpleScheduler;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InjectableBean;
@@ -60,7 +64,6 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -81,16 +84,6 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
-import io.carbonintensity.scheduler.quarkus.common.runtime.DefaultInvoker;
-import io.carbonintensity.scheduler.quarkus.common.runtime.MutableScheduledMethod;
-import io.carbonintensity.scheduler.quarkus.common.runtime.SchedulerContext;
-import io.carbonintensity.scheduler.quarkus.common.runtime.util.SchedulerUtils;
-
-import io.carbonintensity.scheduler.quarkus.runtime.Constituent;
-import io.carbonintensity.scheduler.quarkus.runtime.SchedulerConfig;
-import io.carbonintensity.scheduler.quarkus.runtime.SchedulerRecorder;
-import io.carbonintensity.scheduler.quarkus.runtime.SimpleScheduler;
-import io.smallrye.common.annotation.Identifier;
 
 public class SchedulerProcessor {
 
@@ -107,48 +100,48 @@ public class SchedulerProcessor {
         return new SchedulerImplementationBuildItem("Scheduled.SIMPLE", DotName.createSimple(SimpleScheduler.class), 0);
     }
 
-//    @BuildStep
-//    void compositeScheduler(SchedulerConfig config, List<SchedulerImplementationBuildItem> implementations,
-//            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-//            BuildProducer<DiscoveredImplementationsBuildItem> discoveredImplementations) {
-//        List<SchedulerImplementationBuildItem> sorted = implementations.stream()
-//                .sorted(Comparator.comparingInt(SchedulerImplementationBuildItem::getPriority).reversed()).toList();
-//        Set<String> found = sorted.stream().map(SchedulerImplementationBuildItem::getImplementation)
-//                .collect(Collectors.toUnmodifiableSet());
-//        if (found.size() != implementations.size()) {
-//            throw new IllegalStateException("Invalid scheduler implementations detected: " + implementations);
-//        }
-//        DiscoveredImplementationsBuildItem discovered = new DiscoveredImplementationsBuildItem(
-//                sorted.get(0).getImplementation(), found,
-//                config.useCompositeScheduler());
-//        discoveredImplementations.produce(discovered);
-//
-//    }
+    //    @BuildStep
+    //    void compositeScheduler(SchedulerConfig config, List<SchedulerImplementationBuildItem> implementations,
+    //            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    //            BuildProducer<DiscoveredImplementationsBuildItem> discoveredImplementations) {
+    //        List<SchedulerImplementationBuildItem> sorted = implementations.stream()
+    //                .sorted(Comparator.comparingInt(SchedulerImplementationBuildItem::getPriority).reversed()).toList();
+    //        Set<String> found = sorted.stream().map(SchedulerImplementationBuildItem::getImplementation)
+    //                .collect(Collectors.toUnmodifiableSet());
+    //        if (found.size() != implementations.size()) {
+    //            throw new IllegalStateException("Invalid scheduler implementations detected: " + implementations);
+    //        }
+    //        DiscoveredImplementationsBuildItem discovered = new DiscoveredImplementationsBuildItem(
+    //                sorted.get(0).getImplementation(), found,
+    //                config.useCompositeScheduler());
+    //        discoveredImplementations.produce(discovered);
+    //
+    //    }
 
-//    @BuildStep
-//    void transformSchedulerBeans(DiscoveredImplementationsBuildItem discoveredImplementations,
-//            List<SchedulerImplementationBuildItem> implementations,
-//            BuildProducer<AnnotationsTransformerBuildItem> transformer) {
-//        if (discoveredImplementations.isCompositeSchedulerUsed()) {
-//            Map<DotName, String> implsToBeanClass = implementations.stream()
-//                    .collect(Collectors.toMap(SchedulerImplementationBuildItem::getSchedulerBeanClass,
-//                            SchedulerImplementationBuildItem::getImplementation));
-//            transformer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forClasses()
-//                    .whenClass(c -> implsToBeanClass.containsKey(c.name()))
-//                    .transform(c -> {
-//                        c.add(AnnotationInstance.builder(Constituent.class).build());
-//                        c.add(AnnotationInstance.builder(Identifier.class)
-//                                .add("value", implsToBeanClass.get(c.declaration().asClass().name())).build());
-//                    })));
-//        }
-//    }
+    //    @BuildStep
+    //    void transformSchedulerBeans(DiscoveredImplementationsBuildItem discoveredImplementations,
+    //            List<SchedulerImplementationBuildItem> implementations,
+    //            BuildProducer<AnnotationsTransformerBuildItem> transformer) {
+    //        if (discoveredImplementations.isCompositeSchedulerUsed()) {
+    //            Map<DotName, String> implsToBeanClass = implementations.stream()
+    //                    .collect(Collectors.toMap(SchedulerImplementationBuildItem::getSchedulerBeanClass,
+    //                            SchedulerImplementationBuildItem::getImplementation));
+    //            transformer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forClasses()
+    //                    .whenClass(c -> implsToBeanClass.containsKey(c.name()))
+    //                    .transform(c -> {
+    //                        c.add(AnnotationInstance.builder(Constituent.class).build());
+    //                        c.add(AnnotationInstance.builder(Identifier.class)
+    //                                .add("value", implsToBeanClass.get(c.declaration().asClass().name())).build());
+    //                    })));
+    //        }
+    //    }
 
     @BuildStep
     void beans(
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         //additionalBeans.produce(new AdditionalBeanBuildItem(Scheduled.ApplicationNotRunning.class));
 
-            additionalBeans.produce(new AdditionalBeanBuildItem(SimpleScheduler.class));
+        additionalBeans.produce(new AdditionalBeanBuildItem(SimpleScheduler.class));
 
     }
 
@@ -296,7 +289,7 @@ public class SchedulerProcessor {
                 }
             }
             // Validate cron() and every() expressions
-            long checkPeriod = capabilities.isMissing(Capability.QUARTZ) ? SimpleScheduler.CHECK_PERIOD : 50;
+            long checkPeriod = 50;
             CronParser parser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(config.cronType()));
             for (AnnotationInstance scheduled : scheduledMethod.getSchedules()) {
                 Throwable error = validateScheduled(parser, scheduled, encounteredIdentities, validationPhase.getContext(),
@@ -378,7 +371,7 @@ public class SchedulerProcessor {
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SchedulerContext.class).setRuntimeInit()
-                .supplier(recorder.createContext(config, scheduledMetadata, !schedulerForcedStartItems.isEmpty()))
+                .supplier(recorder.createContext(scheduledMetadata))
                 .done());
 
         return new FeatureBuildItem(Feature.SCHEDULER);
@@ -693,7 +686,6 @@ public class SchedulerProcessor {
                 }
             }
         }
-
 
         return null;
     }
