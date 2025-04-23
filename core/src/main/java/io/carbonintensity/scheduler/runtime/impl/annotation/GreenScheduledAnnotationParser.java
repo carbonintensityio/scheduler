@@ -17,6 +17,7 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.parser.CronParser;
 
 import io.carbonintensity.executionplanner.planner.fixedwindow.DefaultFixedWindowPlanningConstraints;
+import io.carbonintensity.executionplanner.planner.fixedwindow.ScheduledDayType;
 import io.carbonintensity.executionplanner.planner.successive.DefaultSuccessivePlanningConstraints;
 import io.carbonintensity.executionplanner.spi.PlanningConstraints;
 import io.carbonintensity.scheduler.GreenScheduled;
@@ -58,6 +59,12 @@ public class GreenScheduledAnnotationParser {
                 .filter(timeZone -> !timeZone.isEmpty())
                 .map(ZoneId::of)
                 .orElse(ZoneId.systemDefault());
+
+        ScheduledDayType scheduledDayType = Optional.ofNullable(annotation.scheduledDay())
+                .filter(scheduledDay -> !scheduledDay.isEmpty())
+                .map(scheduledDay -> ScheduledDayType.valueOf(scheduledDay))
+                .orElse(ScheduledDayType.EVERY_DAY);
+
         final var optionalFixedWindow = FixedWindowExpressionParser.parse(annotation.fixedWindow(), clock, timeZoneId);
         if (optionalFixedWindow.isPresent()) {
             final var fixedWindow = optionalFixedWindow.get();
@@ -70,6 +77,7 @@ public class GreenScheduledAnnotationParser {
                     .withStart(fixedWindow.getStartTime())
                     .withEnd(fixedWindow.getEndTime())
                     .withZone(annotation.zone())
+                    .withScheduledDayType(scheduledDayType)
                     .withTimeZoneId(timeZoneId)
                     .withFallbackCronExpression(fallBackCronExpression)
                     .build();

@@ -76,6 +76,16 @@ public @interface GreenScheduled {
     String timeZone() default "";
 
     /**
+     * Which day the task has to be executed
+     * Default: EVERYDAY
+     * Options: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY,
+     * EVERY_DAY, EVERY_WORKDAY,
+     *
+     *
+     */
+    String scheduledDay() default "EVERY_DAY";
+
+    /**
      * A custom expression to define the Successive Scheduling constraints.
      * <p>
      * The format is as follows:
