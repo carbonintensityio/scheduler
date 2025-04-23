@@ -41,8 +41,18 @@ jobs:
           java-version: '17'
           cache: 'maven'
 
+      - name: Setup GPG signing
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          echo "use-agent" >> ~/.gnupg/gpg.conf
+          echo RELOADAGENT | gpg-connect-agent
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
       - name: Build artefact
-        run: ./mvnw $COMMON_MAVEN_ARGS --file pom.xml -Drevision=${{steps.metadata.outputs.current-version}} deploy
+        run: ./mvnw $COMMON_MAVEN_ARGS --file pom.xml -Drevision=${{steps.metadata.outputs.current-version}} -Dgpg.keyname=${{ secrets.GPG_KEY_ID }} -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }} deploy
 
       - name: Tag
         uses: hole19/git-tag-action@master
