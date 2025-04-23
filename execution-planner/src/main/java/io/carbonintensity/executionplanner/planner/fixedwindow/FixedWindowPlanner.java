@@ -46,6 +46,7 @@ public class FixedWindowPlanner implements CarbonIntensityPlanner<FixedWindowPla
                 .withStartTime(constraints.getStart())
                 .withEndTime(constraints.getEnd())
                 .withZone(constraints.getZone())
+                .withScheduledDayType(constraints.getScheduledDayType())
                 .build();
         final var carbonIntensity = dataFetcher.fetchCarbonIntensity(period);
 

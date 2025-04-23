@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.ZonedDateTime;
 
+import io.carbonintensity.executionplanner.planner.fixedwindow.ScheduledDayType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -58,4 +59,26 @@ class TestZonedCarbonIntensityPeriod {
         assertThat(zonedPeriod).isNotNull();
         assertThat(builder.build()).isNotEqualTo(zonedPeriod);
     }
+
+    @Test
+    void whenBuildingWithoutScheduledDayType_thenNotThrowException() {
+        builder.withEndTime(ZonedDateTime.now());
+        builder.withStartTime(ZonedDateTime.now());
+        builder.withZone("nl");
+        var zonedPeriod = builder.build();
+        assertThat(zonedPeriod).isNotNull();
+    }
+
+    @Test
+    void whenBuildingWithScheduledDayType_thenNotThrowException() {
+        builder.withEndTime(ZonedDateTime.now());
+        builder.withStartTime(ZonedDateTime.now());
+        builder.withZone("nl");
+        builder.withScheduledDayType(ScheduledDayType.DAY_1);
+        var zonedPeriod = builder.build();
+        assertThat(zonedPeriod).isNotNull();
+        assertThat(zonedPeriod.getScheduledDayType()).isNotNull();
+    }
+
+
 }
