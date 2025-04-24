@@ -1,25 +1,27 @@
 package io.carbonintensity.executionplanner.planner.fixedwindow;
 
-import com.cronutils.model.Cron;
-import com.cronutils.model.CronType;
-import com.cronutils.model.definition.CronDefinitionBuilder;
-import com.cronutils.parser.CronParser;
-import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcher;
-import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityJsonParser;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.cronutils.model.Cron;
+import com.cronutils.model.CronType;
+import com.cronutils.model.definition.CronDefinitionBuilder;
+import com.cronutils.parser.CronParser;
+
+import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcher;
+import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityJsonParser;
 
 @ExtendWith(MockitoExtension.class)
 class TestFixedWindowPlanner {
