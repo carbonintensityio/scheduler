@@ -22,7 +22,7 @@ import io.carbonintensity.scheduler.runtime.SchedulerDefaults;
 public class GreenScheduledProperties {
 
     public static final Duration DEFAULT_OVERDUE_GRACE_PERIOD = SchedulerDefaults.DEFAULT_OVERDUE_GRACE_PERIOD;
-    public static final Duration DEFAULT_SHUTDOWN_GRADE_PERIOD = SchedulerDefaults.DEFAULT_SHUTDOWN_GRADE_PERIOD;
+    public static final Duration DEFAULT_SHUTDOWN_GRADE_PERIOD = SchedulerDefaults.DEFAULT_SHUTDOWN_GRACE_PERIOD;
     public static final int DEFAULT_NUMBER_OF_JOB_EXECUTORS = SchedulerDefaults.DEFAULT_NUMBER_OF_JOB_EXECUTORS;
     public static final SchedulerConfig.StartMode DEFAULT_START_MODE = SchedulerConfig.StartMode.NORMAL;
     public static final String DEFAULT_API_URL = SchedulerDefaults.DEFAULT_API_URL;

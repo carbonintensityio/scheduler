@@ -41,7 +41,7 @@ public class SchedulerConfig {
      */
     private Duration overdueGracePeriod = SchedulerDefaults.DEFAULT_OVERDUE_GRACE_PERIOD;
 
-    private Duration shutdownGracePeriod = SchedulerDefaults.DEFAULT_SHUTDOWN_GRADE_PERIOD;
+    private Duration shutdownGracePeriod = SchedulerDefaults.DEFAULT_SHUTDOWN_GRACE_PERIOD;
 
     /**
      * Scheduler can be started in different modes. By default, the scheduler is not started unless a
