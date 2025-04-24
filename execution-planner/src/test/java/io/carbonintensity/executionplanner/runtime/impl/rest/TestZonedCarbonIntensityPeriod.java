@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.ZonedDateTime;
 
-import io.carbonintensity.executionplanner.planner.fixedwindow.ScheduledDayType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.carbonintensity.executionplanner.planner.fixedwindow.ScheduledDayType;
 import io.carbonintensity.executionplanner.runtime.impl.ZonedCarbonIntensityPeriod;
 
 class TestZonedCarbonIntensityPeriod {
