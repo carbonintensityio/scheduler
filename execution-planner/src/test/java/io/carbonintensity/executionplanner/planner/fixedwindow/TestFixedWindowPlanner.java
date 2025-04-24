@@ -63,7 +63,6 @@ class TestFixedWindowPlanner {
         assertThat(nextExecutionTime).isBefore(now.plusDays(1));
     }
 
-
     @Test
     void shouldScheduleOnFirstMonday() {
         final var parser = new CarbonIntensityJsonParser();

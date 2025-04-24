@@ -80,5 +80,4 @@ class TestZonedCarbonIntensityPeriod {
         assertThat(zonedPeriod.getScheduledDayType()).isNotNull();
     }
 
-
 }
