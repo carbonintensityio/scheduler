@@ -235,7 +235,7 @@ public class SimpleScheduler implements Scheduler {
                     return t;
                 }
             };
-            // This executor  is used to run all jobs
+            // This executor is used to run all jobs
             this.jobExecutor = Executors.newFixedThreadPool(schedulerConfig.getJobExecutors(), jtf);
         }
 
@@ -303,7 +303,7 @@ public class SimpleScheduler implements Scheduler {
         }
         try {
             if (jobExecutor != null) {
-                jobExecutor.shutdownNow();
+                jobExecutor.shutdown();
                 try {
                     if (!jobExecutor.awaitTermination(schedulerConfig.getShutdownGracePeriod()
                             .getSeconds(), TimeUnit.SECONDS)) {

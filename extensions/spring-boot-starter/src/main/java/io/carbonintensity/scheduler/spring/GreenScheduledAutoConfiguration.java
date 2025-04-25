@@ -2,6 +2,8 @@ package io.carbonintensity.scheduler.spring;
 
 import java.time.Clock;
 
+import jakarta.annotation.PreDestroy;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +38,7 @@ import io.carbonintensity.scheduler.spring.factory.*;
 public class GreenScheduledAutoConfiguration {
 
     private final Logger logger = LoggerFactory.getLogger(GreenScheduledAutoConfiguration.class);
+    private SimpleScheduler simpleScheduler;
 
     @Bean
     @ConditionalOnMissingBean
@@ -77,12 +80,20 @@ public class GreenScheduledAutoConfiguration {
 
     @EventListener
     public void handleContextStart(ContextRefreshedEvent event) {
-        var simpleScheduler = (SimpleScheduler) springSchedulerFactory().getObject();
+        this.simpleScheduler = (SimpleScheduler) springSchedulerFactory().getObject();
         while (greenScheduledBeanProcessor.hasNext()) {
             var beanInfo = greenScheduledBeanProcessor.next();
             logger.info("Scheduling bean {}", beanInfo.getBean());
             var scheduledMethod = scheduledMethodFactory().create(beanInfo.getBean(), beanInfo.getBeanMethod());
             simpleScheduler.scheduleMethod(scheduledMethod);
+        }
+    }
+
+    @PreDestroy
+    public void stopScheduler() {
+        if (simpleScheduler != null) {
+            logger.info("Stopping the scheduler.");
+            simpleScheduler.stop();
         }
     }
 }
