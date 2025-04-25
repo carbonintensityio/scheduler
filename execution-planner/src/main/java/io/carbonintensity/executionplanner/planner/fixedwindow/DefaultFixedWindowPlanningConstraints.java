@@ -145,6 +145,9 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
         int setDay = s.getDayOfMonth();
 
         if (shouldBeDay > 28 && s.getMonthValue() == 2) {
+            if (s.plusDays(29 - setDay).getDayOfMonth() == 29) {
+                return 29 - setDay;
+            }
             return 28 - setDay;
         }
 
@@ -157,6 +160,9 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
                 delay--;
             }
             if (s.getMonthValue() == 2) {
+                if (s.plusDays(29 - setDay).getDayOfMonth() == 29) {
+                    delay++;
+                }
                 delay -= 3;
             }
         }
