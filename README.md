@@ -61,7 +61,7 @@ Using the "regular" scheduler:
 
 @Scheduled(cron = "0 0 9 * * ?", zone = "Europe/Amsterdam")
 public void runAt9AM() {
-    // Task to be executed at 6 AM every day
+    // Task to be executed at 9 AM every day
 }
 ```
 
@@ -70,6 +70,41 @@ This would be replaced by the `@GreenScheduled` annotation. The job below might 
 
 @GreenScheduled(fixedWindow = "08:00 17:00", duration = "1h", zone = "NL", timeZone = "Europe/Amsterdam")
 public void greenFixedWindowJob() {
+    // Task to be started at the greenest moment between 08:00 and 17:00
+}
+```
+
+#### Fixed on a specific day
+
+Th green scheduler can also run on a specific day. These days have the same notation as the fields day-of-Month and day-of-Week in a cron expression (Quartz implementation) and can not be used at the same time.  
+
+Using the "regular" scheduler:
+
+```java
+
+@Scheduled(cron = "0 0 9 ? * MON", zone = "Europe/Amsterdam")
+public void runAt9AMonMonday() {
+    // Task to be executed at 9 AM every monday
+}
+
+@Scheduled(cron = "0 0 9 1 * ?", zone = "Europe/Amsterdam")
+public void runAt9AMFirstOfMonth() {
+    // Task to be executed at 9 AM every first of the month
+}
+
+```
+
+Using the green scheduler:
+
+```java
+
+@GreenScheduled(fixedWindow = "08:00 17:00", duration = "1h", zone = "NL", timeZone = "Europe/Amsterdam", dayOfWeek= "MON")
+public void greenFixedWindowJobMonday() {
+    // Task to be started at the greenest moment between 08:00 and 17:00
+}
+
+@GreenScheduled(fixedWindow = "08:00 17:00", duration = "1h", zone = "NL", timeZone = "Europe/Amsterdam", dayOfMonth= "1")
+public void greenFixedWindowJobFirstMonth() {
     // Task to be started at the greenest moment between 08:00 and 17:00
 }
 ```
