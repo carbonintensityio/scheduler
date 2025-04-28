@@ -14,7 +14,7 @@ public abstract class FixedWindowPlanningConstraints implements PlanningConstrai
 
     public abstract ZoneId getTimeZoneId();
 
-    public abstract ScheduledDayType getScheduledDayType();
+    public abstract Cron getCronExpression();
 
     public abstract Cron getFallbackCronExpression();
 }

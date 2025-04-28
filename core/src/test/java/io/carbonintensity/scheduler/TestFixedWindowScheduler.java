@@ -148,7 +148,7 @@ class TestFixedWindowScheduler {
         when(greenScheduled.identity()).thenReturn("test");
         when(greenScheduled.overdueGracePeriod()).thenReturn("PT90S");
         when(greenScheduled.timeZone()).thenReturn("Europe/Amsterdam");
-        when(greenScheduled.scheduledDay()).thenReturn("MONDAY");
+        when(greenScheduled.dayOfWeek()).thenReturn("MON");
         when(greenScheduled.skipExecutionIf()).thenAnswer(invocationOnMock -> SkipPredicate.Never.class);
 
         ImmutableScheduledMethod immutableScheduledMethod = new ImmutableScheduledMethod(
@@ -227,7 +227,7 @@ class TestFixedWindowScheduler {
         when(greenScheduled.identity()).thenReturn("test");
         when(greenScheduled.overdueGracePeriod()).thenReturn("PT90S");
         when(greenScheduled.timeZone()).thenReturn("Europe/Amsterdam");
-        when(greenScheduled.scheduledDay()).thenReturn("DAY_2");
+        when(greenScheduled.dayOfMonth()).thenReturn("2");
         when(greenScheduled.skipExecutionIf()).thenAnswer(invocationOnMock -> SkipPredicate.Never.class);
 
         ImmutableScheduledMethod immutableScheduledMethod = new ImmutableScheduledMethod(
@@ -312,7 +312,7 @@ class TestFixedWindowScheduler {
         when(greenScheduled.identity()).thenReturn("test");
         when(greenScheduled.overdueGracePeriod()).thenReturn("PT90S");
         when(greenScheduled.timeZone()).thenReturn("Europe/Amsterdam");
-        when(greenScheduled.scheduledDay()).thenReturn("EVERY_WORKDAY");
+        when(greenScheduled.dayOfWeek()).thenReturn("MON-FRI");
         when(greenScheduled.skipExecutionIf()).thenAnswer(invocationOnMock -> SkipPredicate.Never.class);
 
         ImmutableScheduledMethod immutableScheduledMethod = new ImmutableScheduledMethod(

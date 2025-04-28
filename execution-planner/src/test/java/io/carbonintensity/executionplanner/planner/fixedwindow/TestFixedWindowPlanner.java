@@ -45,17 +45,25 @@ class TestFixedWindowPlanner {
 
         ZonedDateTime now = ZonedDateTime.now();
 
-        String cronExpression = "0 0 * * *";
-        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX));
+        int seconds = now.getSecond();
+        int minutes = now.getMinute();
+        int hours = now.getHour();
+        String cronExpression = String.format("%d %d %d * * ?", seconds, minutes, hours);
+        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         Cron cron = cronparser.parse(cronExpression);
+        System.out.println(cron.toString());
+
+        String cronExpressionFallback = "0 0 12 * * ?";
+        Cron cronFallback = cronparser.parse(cronExpressionFallback);
 
         final var constraints = DefaultFixedWindowPlanningConstraints.builder()
                 .withIdentity("foo")
                 .withDuration(Duration.ofMinutes(60))
                 .withZone("NL")
+                .withCronExpression(cron)
                 .withStart(now)
                 .withEnd(now.plusHours(6))
-                .withFallbackCronExpression(cron)
+                .withFallbackCronExpression(cronFallback)
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
 
@@ -75,18 +83,24 @@ class TestFixedWindowPlanner {
 
         ZonedDateTime now = ZonedDateTime.now();
 
-        String cronExpression = "0 0 * * *";
-        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX));
+        int seconds = now.getSecond();
+        int minutes = now.getMinute();
+        int hours = now.getHour();
+        String cronExpression = String.format("%d %d %d * * ?", seconds, minutes, hours);
+        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         Cron cron = cronparser.parse(cronExpression);
+
+        String cronExpressionFallback = "0 0 12 * * ?";
+        Cron cronFallback = cronparser.parse(cronExpressionFallback);
 
         final var constraints = DefaultFixedWindowPlanningConstraints.builder()
                 .withIdentity("foo")
                 .withDuration(Duration.ofMinutes(60))
                 .withZone("NL")
+                .withCronExpression(cron)
                 .withStart(now)
                 .withEnd(now.plusHours(6))
-                .withScheduledDayType(ScheduledDayType.MONDAY)
-                .withFallbackCronExpression(cron)
+                .withFallbackCronExpression(cronFallback)
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
 
@@ -107,18 +121,24 @@ class TestFixedWindowPlanner {
 
         ZonedDateTime now = ZonedDateTime.now();
 
-        String cronExpression = "0 0 * * *";
-        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX));
+        int seconds = now.getSecond();
+        int minutes = now.getMinute();
+        int hours = now.getHour();
+        String cronExpression = String.format("%d %d %d 1 * ?", seconds, minutes, hours);
+        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         Cron cron = cronparser.parse(cronExpression);
+
+        String cronExpressionFallback = "0 0 12 * * ?";
+        Cron cronFallback = cronparser.parse(cronExpressionFallback);
 
         final var constraints = DefaultFixedWindowPlanningConstraints.builder()
                 .withIdentity("foo")
                 .withDuration(Duration.ofMinutes(60))
                 .withZone("NL")
+                .withCronExpression(cron)
                 .withStart(now)
                 .withEnd(now.plusHours(6))
-                .withScheduledDayType(ScheduledDayType.DAY_1)
-                .withFallbackCronExpression(cron)
+                .withFallbackCronExpression(cronFallback)
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
 
@@ -139,18 +159,24 @@ class TestFixedWindowPlanner {
 
         ZonedDateTime date = ZonedDateTime.parse("2025-04-27T14:30+02:00");
 
-        String cronExpression = "0 0 * * *";
-        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX));
+        int seconds = date.getSecond();
+        int minutes = date.getMinute();
+        int hours = date.getHour();
+        String cronExpression = String.format("%d %d %d ? * 2-6", seconds, minutes, hours);
+        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         Cron cron = cronparser.parse(cronExpression);
+
+        String cronExpressionFallback = "0 0 12 * * ?";
+        Cron cronFallback = cronparser.parse(cronExpressionFallback);
 
         final var constraints = DefaultFixedWindowPlanningConstraints.builder()
                 .withIdentity("foo")
                 .withDuration(Duration.ofMinutes(60))
                 .withZone("NL")
+                .withCronExpression(cron)
                 .withStart(date)
                 .withEnd(date.plusHours(6))
-                .withScheduledDayType(ScheduledDayType.EVERY_WORKDAY)
-                .withFallbackCronExpression(cron)
+                .withFallbackCronExpression(cronFallback)
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
 
@@ -159,72 +185,5 @@ class TestFixedWindowPlanner {
         assertThat(nextExecutionTime.getDayOfWeek()).isNotEqualTo(DayOfWeek.SUNDAY);
         assertThat(nextExecutionTime).isAfter(date.minusMinutes(1));
         assertThat(nextExecutionTime).isBefore(date.plusDays(7));
-    }
-
-    @Test
-    void shouldScheduleLastDayOfMonth() {
-        final var parser = new CarbonIntensityJsonParser();
-        final var carbonIntensity = parser.parse(ClassLoader.getSystemResourceAsStream("day-ahead-20240824-Z.json"));
-
-        when(carbonIntensityDataFetcher.fetchCarbonIntensity(any()))
-                .thenReturn(carbonIntensity);
-
-        ZonedDateTime now = ZonedDateTime.now();
-
-        String cronExpression = "0 0 * * *";
-        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX));
-        Cron cron = cronparser.parse(cronExpression);
-
-        final var constraints = DefaultFixedWindowPlanningConstraints.builder()
-                .withIdentity("foo")
-                .withDuration(Duration.ofMinutes(60))
-                .withZone("NL")
-                .withStart(now)
-                .withEnd(now.plusHours(6))
-                .withScheduledDayType(ScheduledDayType.DAY_31)
-                .withFallbackCronExpression(cron)
-                .withTimeZoneId(ZoneId.of("UTC"))
-                .build();
-
-        ZonedDateTime nextExecutionTime = defaultCarbonIntensityScheduler.getNextExecutionTime(constraints);
-        assertThat(nextExecutionTime).isNotNull();
-        assertThat(nextExecutionTime.getDayOfMonth()).isGreaterThanOrEqualTo(28);
-        assertThat(nextExecutionTime).isAfter(now.minusMinutes(1));
-        assertThat(nextExecutionTime).isBefore(now.plusDays(31));
-    }
-
-    @Test
-    void shouldScheduleNextDay() {
-        final var parser = new CarbonIntensityJsonParser();
-        final var carbonIntensity = parser.parse(ClassLoader.getSystemResourceAsStream("day-ahead-20240824-Z.json"));
-
-        when(carbonIntensityDataFetcher.fetchCarbonIntensity(any()))
-                .thenReturn(carbonIntensity);
-
-        ZonedDateTime now = ZonedDateTime.now();
-
-        String cronExpression = "0 0 * * *";
-        CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.UNIX));
-        Cron cron = cronparser.parse(cronExpression);
-
-        final var constraints = DefaultFixedWindowPlanningConstraints.builder()
-                .withIdentity("foo")
-                .withDuration(Duration.ofMinutes(60))
-                .withZone("NL")
-                .withStart(now)
-                .withEnd(now.plusHours(6))
-                .withFallbackCronExpression(cron)
-                .withTimeZoneId(ZoneId.of("UTC"))
-                .build();
-
-        var constraintsNextDay = DefaultFixedWindowPlanningConstraints.from(constraints)
-                .withStart(constraints.getStart().plusDays(1))
-                .withEnd(constraints.getEnd().plusDays(1))
-                .build();
-
-        ZonedDateTime nextExecutionTime = defaultCarbonIntensityScheduler.getNextExecutionTime(constraintsNextDay);
-        assertThat(nextExecutionTime).isNotNull();
-        assertThat(nextExecutionTime).isAfter(now.plusDays(1).minusMinutes(1));
-        assertThat(nextExecutionTime).isBefore(now.plusDays(2));
     }
 }

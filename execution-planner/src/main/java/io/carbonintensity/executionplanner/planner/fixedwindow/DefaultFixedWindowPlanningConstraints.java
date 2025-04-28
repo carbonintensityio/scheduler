@@ -1,14 +1,12 @@
 package io.carbonintensity.executionplanner.planner.fixedwindow;
 
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.temporal.ChronoUnit;
 
 import com.cronutils.model.Cron;
+import com.cronutils.model.time.ExecutionTime;
 
 /**
  * Data class containing the constraints that are used by {@link FixedWindowPlanner} to plan the best window
@@ -22,7 +20,7 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
     private final ZonedDateTime endTime;
     private final Cron fallbackCronExpression;
     private final ZoneId timeZoneId;
-    private final ScheduledDayType scheduledDayType;
+    private final Cron cronExpression;
 
     public DefaultFixedWindowPlanningConstraints(String identity,
             Duration duration,
@@ -31,19 +29,19 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
             ZonedDateTime endTime,
             Cron fallbackCronExpression,
             ZoneId timeZoneId,
-            ScheduledDayType scheduledDayType) {
+            Cron cronExpression) {
         this.identity = identity;
         this.duration = duration;
         this.zone = zone;
+        this.cronExpression = cronExpression;
         int delayDays = 0;
-        if (!checkStartTime(startTime, scheduledDayType)) {
-            delayDays = delayedTime(startTime, scheduledDayType);
+        if (!checkStartTime(startTime, cronExpression)) {
+            delayDays = delayedTime(startTime, cronExpression);
         }
         this.startTime = startTime.plusDays(delayDays);
         this.endTime = endTime.plusDays(delayDays);
         this.fallbackCronExpression = fallbackCronExpression;
         this.timeZoneId = timeZoneId;
-        this.scheduledDayType = scheduledDayType;
     }
 
     @Override
@@ -77,8 +75,8 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
     }
 
     @Override
-    public ScheduledDayType getScheduledDayType() {
-        return scheduledDayType;
+    public Cron getCronExpression() {
+        return cronExpression;
     }
 
     @Override
@@ -95,83 +93,21 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
                 .withIdentity(constraints.getIdentity())
                 .withDuration(constraints.getDuration())
                 .withZone(constraints.getZone())
+                .withCronExpression(constraints.getCronExpression())
                 .withStart(constraints.getStart())
                 .withEnd(constraints.getEnd())
-                .withScheduledDayType(constraints.getScheduledDayType())
                 .withFallbackCronExpression(constraints.getFallbackCronExpression())
                 .withTimeZoneId(constraints.getTimeZoneId());
-
     }
 
-    private static boolean checkStartTime(ZonedDateTime s, ScheduledDayType scheduledDayType) {
-        if (ScheduledDayType.daysOfWeek.contains(scheduledDayType)) {
-            return (DayOfWeek.valueOf(scheduledDayType.name()) == s.getDayOfWeek());
-        } else if (scheduledDayType == ScheduledDayType.EVERY_WORKDAY) {
-            return (s.getDayOfWeek().getValue() <= 5);
-        } else if (ScheduledDayType.daysOfMonth.contains(scheduledDayType)) {
-            return (checkMonth(s, scheduledDayType));
-        }
-        return true;
+    private static boolean checkStartTime(ZonedDateTime s, Cron cron) {
+        s = (s.getNano() > 0) ? s.truncatedTo(ChronoUnit.SECONDS) : s;
+        return ExecutionTime.forCron(cron).isMatch(s);
     }
 
-    private static boolean checkMonth(ZonedDateTime s, ScheduledDayType scheduledDayType) {
-        Set<Integer> monthsWith30Days = new HashSet<>(Arrays.asList(4, 6, 9, 11));
-        int shouldBeDay = ScheduledDayType.getDay(scheduledDayType);
-
-        if (shouldBeDay > 28 && s.getMonthValue() == 2) {
-            return s.getDayOfMonth() == 28;
-        } else if (shouldBeDay == 31 && monthsWith30Days.contains(s.getMonthValue())) {
-            return s.getDayOfMonth() == 30;
-        }
-        return s.getMonthValue() == shouldBeDay;
-    }
-
-    private static int delayedTime(ZonedDateTime s, ScheduledDayType scheduledDayType) {
-        if (ScheduledDayType.daysOfWeek.contains(scheduledDayType)) {
-            return (Math.floorMod(((DayOfWeek.valueOf(scheduledDayType.name()).getValue() - s.getDayOfWeek().getValue())), 7));
-        }
-        if (scheduledDayType == ScheduledDayType.EVERY_WORKDAY && s.getDayOfWeek().getValue() == 6) {
-            return 2;
-        }
-        if (ScheduledDayType.daysOfMonth.contains(scheduledDayType)) {
-            return calculateMonth(s, scheduledDayType);
-        }
-        return 1;
-    }
-
-    private static int calculateMonth(ZonedDateTime s, ScheduledDayType scheduledDayType) {
-        int delay;
-        int shouldBeDay = ScheduledDayType.getDay(scheduledDayType);
-        int setDay = s.getDayOfMonth();
-
-        if (shouldBeDay > 28 && s.getMonthValue() == 2) {
-            if (s.plusDays(29 - setDay).getDayOfMonth() == 29) {
-                return 29 - setDay;
-            }
-            return 28 - setDay;
-        }
-
-        delay = shouldBeDay - setDay;
-
-        Set<Integer> monthsWith30Days = new HashSet<>(Arrays.asList(4, 6, 9, 11));
-        if (shouldBeDay < setDay) {
-            delay += 31;
-            if (monthsWith30Days.contains(s.getMonthValue())) {
-                delay--;
-            }
-            if (s.getMonthValue() == 2) {
-                if (s.plusDays(29 - setDay).getDayOfMonth() == 29) {
-                    delay++;
-                }
-                delay -= 3;
-            }
-        }
-
-        if (shouldBeDay > setDay && shouldBeDay == 31 && monthsWith30Days.contains(s.getMonthValue())) {
-            delay--;
-        }
-
-        return delay;
+    private static int delayedTime(ZonedDateTime s, Cron cron) {
+        s = (s.getNano() > 0) ? s.truncatedTo(ChronoUnit.SECONDS) : s;
+        return ExecutionTime.forCron(cron).isMatch(s.plusDays(1)) ? 1 : (delayedTime(s.plusDays(1), cron) + 1);
     }
 
     public static final class Builder {
@@ -182,7 +118,7 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
         private ZonedDateTime endTime;
         private Cron fallbackCronExpression;
         private ZoneId timeZoneId;
-        private ScheduledDayType scheduledDayType;
+        private Cron cronExpression;
         private int delay = 0;
 
         private Builder() {
@@ -198,14 +134,19 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
             return this;
         }
 
+        public Builder withCronExpression(Cron cronExpression) {
+            this.cronExpression = cronExpression;
+            return this;
+        }
+
         public Builder withZone(String zone) {
             this.zone = zone;
             return this;
         }
 
         public Builder withStart(ZonedDateTime startTime) {
-            if (!checkStartTime(startTime, scheduledDayType)) {
-                delay = delayedTime(startTime, scheduledDayType);
+            if (!checkStartTime(startTime, cronExpression)) {
+                delay = delayedTime(startTime, cronExpression);
             }
             this.startTime = startTime.plusDays(delay);
             return this;
@@ -226,14 +167,9 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
             return this;
         }
 
-        public Builder withScheduledDayType(ScheduledDayType scheduledDayType) {
-            this.scheduledDayType = scheduledDayType;
-            return this;
-        }
-
         public DefaultFixedWindowPlanningConstraints build() {
             return new DefaultFixedWindowPlanningConstraints(identity, duration, zone, startTime, endTime,
-                    fallbackCronExpression, timeZoneId, scheduledDayType);
+                    fallbackCronExpression, timeZoneId, cronExpression);
         }
 
     }
