@@ -76,14 +76,18 @@ public @interface GreenScheduled {
     String timeZone() default "";
 
     /**
-     * Which day the task has to be executed
-     * Default: EVERYDAY
-     * Options: MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY,
-     * EVERY_DAY, EVERY_WORKDAY,
+     * In cron quartz notation Day-of-month, leave empty if every day or Day-of-week must be used
      *
      *
      */
-    String scheduledDay() default "EVERY_DAY";
+    String dayOfMonth() default "";
+
+    /**
+     * In cron quartz notation Day-of-week, leave empty if every day or Day-of-month must be used
+     *
+     *
+     */
+    String dayOfWeek() default "";
 
     /**
      * A custom expression to define the Successive Scheduling constraints.

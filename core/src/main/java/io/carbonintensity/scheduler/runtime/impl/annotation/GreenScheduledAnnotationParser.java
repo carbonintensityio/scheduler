@@ -17,7 +17,6 @@ import com.cronutils.model.definition.CronDefinitionBuilder;
 import com.cronutils.parser.CronParser;
 
 import io.carbonintensity.executionplanner.planner.fixedwindow.DefaultFixedWindowPlanningConstraints;
-import io.carbonintensity.executionplanner.planner.fixedwindow.ScheduledDayType;
 import io.carbonintensity.executionplanner.planner.successive.DefaultSuccessivePlanningConstraints;
 import io.carbonintensity.executionplanner.spi.PlanningConstraints;
 import io.carbonintensity.scheduler.GreenScheduled;
@@ -47,6 +46,37 @@ public class GreenScheduledAnnotationParser {
         }
     }
 
+    public static Cron parseCronExpression(ZonedDateTime s, String dayOfMonth, String dayOfWeek) {
+        CronDefinition cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ);
+        CronParser cronParser = new CronParser(cronDefinition);
+        int hour = s.getHour();
+        int minute = s.getMinute();
+        int second = s.getSecond();
+
+        if (dayOfMonth != null) {
+            try {
+                String cronString = String.format("%d %d %d %s * ?", second, minute, hour, dayOfMonth);
+                return cronParser.parse(cronString);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid CRON format: " + dayOfMonth, e);
+            }
+        }
+        if (dayOfWeek != null) {
+            try {
+                String cronString = String.format("%d %d %d ? * %s", second, minute, hour, dayOfWeek);
+                return cronParser.parse(cronString);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid CRON format: " + dayOfWeek, e);
+            }
+        }
+        try {
+            String cronString = String.format("%d %d %d * * ?", second, minute, hour);
+            return cronParser.parse(cronString);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid CRON format", e);
+        }
+    }
+
     public static PlanningConstraints createConstraints(String identity, GreenScheduled annotation, Clock clock) {
         List<String> validationErrors = GreenScheduledAnnotationValidation.validateAndReturnValidationErrors(annotation);
         if (!validationErrors.isEmpty()) {
@@ -60,11 +90,6 @@ public class GreenScheduledAnnotationParser {
                 .map(ZoneId::of)
                 .orElse(ZoneId.systemDefault());
 
-        ScheduledDayType scheduledDayType = Optional.ofNullable(annotation.scheduledDay())
-                .filter(scheduledDay -> !scheduledDay.isEmpty())
-                .map(scheduledDay -> ScheduledDayType.valueOf(scheduledDay))
-                .orElse(ScheduledDayType.EVERY_DAY);
-
         final var optionalFixedWindow = FixedWindowExpressionParser.parse(annotation.fixedWindow(), clock, timeZoneId);
         if (optionalFixedWindow.isPresent()) {
             final var fixedWindow = optionalFixedWindow.get();
@@ -74,10 +99,11 @@ public class GreenScheduledAnnotationParser {
             return DefaultFixedWindowPlanningConstraints.builder()
                     .withIdentity(identity)
                     .withDuration(parseDuration(annotation.duration()))
+                    .withCronExpression(
+                            parseCronExpression(fixedWindow.getStartTime(), annotation.dayOfMonth(), annotation.dayOfWeek()))
                     .withStart(fixedWindow.getStartTime())
                     .withEnd(fixedWindow.getEndTime())
                     .withZone(annotation.zone())
-                    .withScheduledDayType(scheduledDayType)
                     .withTimeZoneId(timeZoneId)
                     .withFallbackCronExpression(fallBackCronExpression)
                     .build();

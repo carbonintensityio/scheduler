@@ -38,6 +38,12 @@ public class GreenScheduledAnnotationValidation {
         if (annotation.fixedWindow() != null && (annotation.duration() == null || annotation.duration().isEmpty())) {
             validationErrors.add("Duration must be specified when fixedWindow is specified");
         }
+
+        if (annotation.dayOfMonth() != null && annotation.dayOfWeek() != null) {
+            validationErrors.add("Day of month and day of week can not both be specified ");
+        }
+
         return validationErrors;
     }
+
 }
