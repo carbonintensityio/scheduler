@@ -66,6 +66,5 @@ public class ZonedCarbonIntensityPeriod {
             Objects.requireNonNull(zone, "zoneId is required");
             return new ZonedCarbonIntensityPeriod(this);
         }
-
     }
 }

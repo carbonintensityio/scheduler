@@ -23,6 +23,7 @@ class TestZonedCarbonIntensityPeriod {
     void whenBuildingWithoutZone_thenThrowException() {
         assertThrows(NullPointerException.class, () -> {
             builder = new ZonedCarbonIntensityPeriod.Builder();
+            builder.withEndTime(ZonedDateTime.now());
             builder.withStartTime(ZonedDateTime.now());
             builder.build();
         });
@@ -57,5 +58,4 @@ class TestZonedCarbonIntensityPeriod {
         assertThat(zonedPeriod).isNotNull();
         assertThat(builder.build()).isNotEqualTo(zonedPeriod);
     }
-
 }
