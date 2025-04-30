@@ -1,4 +1,4 @@
-package io.carbonintensity.scheduler.spring.factory;
+package io.carbonintensity.scheduler.runtime.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
