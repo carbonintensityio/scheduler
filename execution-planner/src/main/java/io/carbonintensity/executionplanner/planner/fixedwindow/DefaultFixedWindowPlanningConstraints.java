@@ -111,25 +111,19 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
 
     private static int calculateDelayedDays(ZonedDateTime startTime, Cron cron) {
         startTime = (startTime.getNano() > 0) ? startTime.truncatedTo(ChronoUnit.SECONDS) : startTime;
-        boolean daySatisfies = false;
         int delayDays = 1;
-        while (!daySatisfies) {
+        while (delayDays < 35) {
             if (ExecutionTime.forCron(cron).isMatch(startTime.plusDays(delayDays))) {
-                daySatisfies = true;
+                return delayDays;
             } else {
                 delayDays++;
             }
-
-            if (delayDays > 35) {
-                logger.error(
-                        "Failed to get a new date that satisfies the constraints of day-of-month or day-of-week within a month. "
-                                +
-                                "fallback on daily");
-                delayDays = 0;
-                break;
-            }
         }
-        return delayDays;
+        logger.error(
+                "Failed to get a new date that satisfies the constraints of day-of-month or day-of-week within a month. "
+                        +
+                        "fallback on daily");
+        return 0;
     }
 
     public static final class Builder {
