@@ -94,20 +94,19 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
                 .withDuration(constraints.getDuration())
                 .withZone(constraints.getZone())
                 .withCronExpression(constraints.getCronExpression())
-                .withStart(constraints.getStart())
-                .withEnd(constraints.getEnd())
+                .withStartAndEnd(constraints.getStart(), constraints.getEnd())
                 .withFallbackCronExpression(constraints.getFallbackCronExpression())
                 .withTimeZoneId(constraints.getTimeZoneId());
     }
 
-    private static boolean checkStartTime(ZonedDateTime s, Cron cron) {
-        s = (s.getNano() > 0) ? s.truncatedTo(ChronoUnit.SECONDS) : s;
-        return ExecutionTime.forCron(cron).isMatch(s);
+    private static boolean checkStartTime(ZonedDateTime startTime, Cron cron) {
+        startTime = (startTime.getNano() > 0) ? startTime.truncatedTo(ChronoUnit.SECONDS) : startTime;
+        return ExecutionTime.forCron(cron).isMatch(startTime);
     }
 
-    private static int delayedTime(ZonedDateTime s, Cron cron) {
-        s = (s.getNano() > 0) ? s.truncatedTo(ChronoUnit.SECONDS) : s;
-        return ExecutionTime.forCron(cron).isMatch(s.plusDays(1)) ? 1 : (delayedTime(s.plusDays(1), cron) + 1);
+    private static int delayedTime(ZonedDateTime startTime, Cron cron) {
+        startTime = (startTime.getNano() > 0) ? startTime.truncatedTo(ChronoUnit.SECONDS) : startTime;
+        return ExecutionTime.forCron(cron).isMatch(startTime.plusDays(1)) ? 1 : (delayedTime(startTime.plusDays(1), cron) + 1);
     }
 
     public static final class Builder {
@@ -144,21 +143,17 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
             return this;
         }
 
-        public Builder withStart(ZonedDateTime startTime) {
+        public Builder withStartAndEnd(ZonedDateTime startTime, ZonedDateTime endTime) {
             if (!checkStartTime(startTime, cronExpression)) {
                 delay = delayedTime(startTime, cronExpression);
             }
             this.startTime = startTime.plusDays(delay);
+            this.endTime = endTime.plusDays(delay);
             return this;
         }
 
         public Builder withFallbackCronExpression(Cron fallbackCronExpression) {
             this.fallbackCronExpression = fallbackCronExpression;
-            return this;
-        }
-
-        public Builder withEnd(ZonedDateTime endTime) {
-            this.endTime = endTime.plusDays(delay);
             return this;
         }
 
