@@ -5,6 +5,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.cronutils.model.Cron;
 import com.cronutils.model.time.ExecutionTime;
 
@@ -12,6 +15,8 @@ import com.cronutils.model.time.ExecutionTime;
  * Data class containing the constraints that are used by {@link FixedWindowPlanner} to plan the best window
  */
 public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningConstraints {
+
+    private static final Logger logger = LoggerFactory.getLogger(DefaultFixedWindowPlanningConstraints.class);
 
     private final String identity;
     private final Duration duration;
@@ -36,7 +41,7 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
         this.cronExpression = cronExpression;
         int delayDays = 0;
         if (!checkStartTime(startTime, cronExpression)) {
-            delayDays = delayedTime(startTime, cronExpression);
+            delayDays = calculateDelayedDays(startTime, cronExpression);
         }
         this.startTime = startTime.plusDays(delayDays);
         this.endTime = endTime.plusDays(delayDays);
@@ -104,9 +109,27 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
         return ExecutionTime.forCron(cron).isMatch(startTime);
     }
 
-    private static int delayedTime(ZonedDateTime startTime, Cron cron) {
+    private static int calculateDelayedDays(ZonedDateTime startTime, Cron cron) {
         startTime = (startTime.getNano() > 0) ? startTime.truncatedTo(ChronoUnit.SECONDS) : startTime;
-        return ExecutionTime.forCron(cron).isMatch(startTime.plusDays(1)) ? 1 : (delayedTime(startTime.plusDays(1), cron) + 1);
+        boolean daySatisfies = false;
+        int delayDays = 1;
+        while (!daySatisfies) {
+            if (ExecutionTime.forCron(cron).isMatch(startTime.plusDays(delayDays))) {
+                daySatisfies = true;
+            } else {
+                delayDays++;
+            }
+
+            if (delayDays > 35) {
+                logger.error(
+                        "Failed to get a new date that satisfies the constraints of day-of-month or day-of-week within a month. "
+                                +
+                                "fallback on daily");
+                delayDays = 0;
+                break;
+            }
+        }
+        return delayDays;
     }
 
     public static final class Builder {
@@ -145,7 +168,7 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
         public Builder withStartAndEnd(ZonedDateTime startTime, ZonedDateTime endTime) {
             int delayDays = 0;
             if (!checkStartTime(startTime, cronExpression)) {
-                delayDays = delayedTime(startTime, cronExpression);
+                delayDays = calculateDelayedDays(startTime, cronExpression);
             }
             this.startTime = startTime.plusDays(delayDays);
             this.endTime = endTime.plusDays(delayDays);
