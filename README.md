@@ -17,7 +17,7 @@ Over a month we can see significant reductions in the carbon footprint of this j
 
 This scheduler uses carbon intensity data provided by the carbonintensity.io API — a publicly available service developed by the carbonintensity.io team. Access to the API is free and requires an [API key](#requesting-an-api-key).
 
-The scheduler is tested with Spring and Spring Boot for the NL (Netherlands) zone. For known issues, planned improvements, and feature requests, please refer to the issues section.
+The scheduler is tested with Spring, Spring Boot and Quarkus for the NL (Netherlands) zone. For known issues, planned improvements, and feature requests, please refer to the issues section.
 
 ## How to build
 
@@ -27,13 +27,22 @@ The build instructions are available in the [contribution guide](CONTRIBUTING.md
 
 Currently, the carbon intensity aware scheduling is not published yet. To use the scheduler see [How to build](#how-to-build) on how to install the package locally.
 
-Add the following dependency to the pom:
+Add the following dependency to the pom for a Spring Boot based project:
 ```xml
 <dependency>
     <groupId>io.carbonintensity</groupId>
     <artifactId>scheduler-spring-boot-starter</artifactId>
     <version>999-SNAPSHOT</version>
 </dependency>
+```
+
+or the following for a Quarkus-based project:
+```xml
+   <dependency>
+      <groupId>io.carbonintensity</groupId>
+      <artifactId>quarkus-green-scheduler</artifactId>
+      <version>999-SNAPSHOT</version>
+    </dependency>
 ```
 
 In the application.yaml add the following config including the [API-key](#requesting-an-api-key):

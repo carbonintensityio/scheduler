@@ -33,7 +33,7 @@ class SchedulerConfigBuilderTests {
         assertThat(schedulerConfig.getJobExecutors()).isEqualTo(DEFAULT_NUMBER_OF_JOB_EXECUTORS);
         assertThat(schedulerConfig.getStartMode()).isEqualTo(DEFAULT_START_MODE);
         assertThat(schedulerConfig.getOverdueGracePeriod()).isEqualTo(DEFAULT_OVERDUE_GRACE_PERIOD);
-        assertThat(schedulerConfig.getShutdownGracePeriod()).isEqualTo(DEFAULT_SHUTDOWN_GRADE_PERIOD);
+        assertThat(schedulerConfig.getShutdownGracePeriod()).isEqualTo(DEFAULT_SHUTDOWN_GRACE_PERIOD);
         assertThat(schedulerConfig.getCarbonIntensityApiConfig()).isNotNull();
         assertThat(schedulerConfig.getCarbonIntensityApiConfig().getApiUrl()).isEqualTo(DEFAULT_API_URL);
     }
