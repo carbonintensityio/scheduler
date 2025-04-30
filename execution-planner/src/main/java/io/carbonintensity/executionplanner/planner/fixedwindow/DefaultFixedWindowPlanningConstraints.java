@@ -118,7 +118,6 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
         private Cron fallbackCronExpression;
         private ZoneId timeZoneId;
         private Cron cronExpression;
-        private int delay = 0;
 
         private Builder() {
         }
@@ -144,11 +143,12 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
         }
 
         public Builder withStartAndEnd(ZonedDateTime startTime, ZonedDateTime endTime) {
+            int delayDays = 0;
             if (!checkStartTime(startTime, cronExpression)) {
-                delay = delayedTime(startTime, cronExpression);
+                delayDays = delayedTime(startTime, cronExpression);
             }
-            this.startTime = startTime.plusDays(delay);
-            this.endTime = endTime.plusDays(delay);
+            this.startTime = startTime.plusDays(delayDays);
+            this.endTime = endTime.plusDays(delayDays);
             return this;
         }
 
