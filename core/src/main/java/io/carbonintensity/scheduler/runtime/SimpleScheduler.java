@@ -822,8 +822,7 @@ public class SimpleScheduler implements Scheduler {
                         log.trace("{} fired, trigger={}, updating constraints for next run", this, nextTruncated);
                         lastFireTime = now;
                         constraints = DefaultFixedWindowPlanningConstraints.from(constraints)
-                                .withStart(constraints.getStart().plusDays(1))
-                                .withEnd(constraints.getEnd().plusDays(1))
+                                .withStartAndEnd(constraints.getStart().plusDays(1), constraints.getEnd().plusDays(1))
                                 .build();
                         return nextExecutionTime;
                     }

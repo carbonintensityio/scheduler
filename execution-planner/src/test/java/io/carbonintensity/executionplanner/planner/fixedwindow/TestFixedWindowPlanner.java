@@ -51,7 +51,6 @@ class TestFixedWindowPlanner {
         String cronExpression = String.format("%d %d %d * * ?", seconds, minutes, hours);
         CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         Cron cron = cronparser.parse(cronExpression);
-        System.out.println(cron.toString());
 
         String cronExpressionFallback = "0 0 12 * * ?";
         Cron cronFallback = cronparser.parse(cronExpressionFallback);
@@ -61,8 +60,7 @@ class TestFixedWindowPlanner {
                 .withDuration(Duration.ofMinutes(60))
                 .withZone("NL")
                 .withCronExpression(cron)
-                .withStart(now)
-                .withEnd(now.plusHours(6))
+                .withStartAndEnd(now, now.plusHours(6))
                 .withFallbackCronExpression(cronFallback)
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
@@ -86,7 +84,7 @@ class TestFixedWindowPlanner {
         int seconds = now.getSecond();
         int minutes = now.getMinute();
         int hours = now.getHour();
-        String cronExpression = String.format("%d %d %d * * ?", seconds, minutes, hours);
+        String cronExpression = String.format("%d %d %d ? * MON", seconds, minutes, hours);
         CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         Cron cron = cronparser.parse(cronExpression);
 
@@ -98,8 +96,7 @@ class TestFixedWindowPlanner {
                 .withDuration(Duration.ofMinutes(60))
                 .withZone("NL")
                 .withCronExpression(cron)
-                .withStart(now)
-                .withEnd(now.plusHours(6))
+                .withStartAndEnd(now, now.plusHours(6))
                 .withFallbackCronExpression(cronFallback)
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
@@ -136,8 +133,7 @@ class TestFixedWindowPlanner {
                 .withDuration(Duration.ofMinutes(60))
                 .withZone("NL")
                 .withCronExpression(cron)
-                .withStart(now)
-                .withEnd(now.plusHours(6))
+                .withStartAndEnd(now, now.plusHours(6))
                 .withFallbackCronExpression(cronFallback)
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
@@ -162,7 +158,7 @@ class TestFixedWindowPlanner {
         int seconds = date.getSecond();
         int minutes = date.getMinute();
         int hours = date.getHour();
-        String cronExpression = String.format("%d %d %d ? * 2-6", seconds, minutes, hours);
+        String cronExpression = String.format("%d %d %d ? * MON-SAT", seconds, minutes, hours);
         CronParser cronparser = new CronParser(CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ));
         Cron cron = cronparser.parse(cronExpression);
 
@@ -174,8 +170,7 @@ class TestFixedWindowPlanner {
                 .withDuration(Duration.ofMinutes(60))
                 .withZone("NL")
                 .withCronExpression(cron)
-                .withStart(date)
-                .withEnd(date.plusHours(6))
+                .withStartAndEnd(date, date.plusHours(6))
                 .withFallbackCronExpression(cronFallback)
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();

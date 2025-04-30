@@ -46,12 +46,12 @@ public class GreenScheduledAnnotationParser {
         }
     }
 
-    public static Cron parseCronExpression(ZonedDateTime s, String dayOfMonth, String dayOfWeek) {
+    public static Cron parseCronExpression(ZonedDateTime startTime, String dayOfMonth, String dayOfWeek) {
         CronDefinition cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ);
         CronParser cronParser = new CronParser(cronDefinition);
-        int hour = s.getHour();
-        int minute = s.getMinute();
-        int second = s.getSecond();
+        int hour = startTime.getHour();
+        int minute = startTime.getMinute();
+        int second = startTime.getSecond();
 
         if (dayOfMonth != null) {
             try {
@@ -101,8 +101,7 @@ public class GreenScheduledAnnotationParser {
                     .withDuration(parseDuration(annotation.duration()))
                     .withCronExpression(
                             parseCronExpression(fixedWindow.getStartTime(), annotation.dayOfMonth(), annotation.dayOfWeek()))
-                    .withStart(fixedWindow.getStartTime())
-                    .withEnd(fixedWindow.getEndTime())
+                    .withStartAndEnd(fixedWindow.getStartTime(), fixedWindow.getEndTime())
                     .withZone(annotation.zone())
                     .withTimeZoneId(timeZoneId)
                     .withFallbackCronExpression(fallBackCronExpression)
