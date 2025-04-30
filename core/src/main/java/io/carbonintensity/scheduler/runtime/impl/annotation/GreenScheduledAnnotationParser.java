@@ -46,6 +46,37 @@ public class GreenScheduledAnnotationParser {
         }
     }
 
+    public static Cron parseCronExpression(ZonedDateTime startTime, String dayOfMonth, String dayOfWeek) {
+        CronDefinition cronDefinition = CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ);
+        CronParser cronParser = new CronParser(cronDefinition);
+        int hour = startTime.getHour();
+        int minute = startTime.getMinute();
+        int second = startTime.getSecond();
+
+        if (dayOfMonth != null) {
+            try {
+                String cronString = String.format("%d %d %d %s * ?", second, minute, hour, dayOfMonth);
+                return cronParser.parse(cronString);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid CRON format: " + dayOfMonth, e);
+            }
+        }
+        if (dayOfWeek != null) {
+            try {
+                String cronString = String.format("%d %d %d ? * %s", second, minute, hour, dayOfWeek);
+                return cronParser.parse(cronString);
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Invalid CRON format: " + dayOfWeek, e);
+            }
+        }
+        try {
+            String cronString = String.format("%d %d %d * * ?", second, minute, hour);
+            return cronParser.parse(cronString);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid CRON format", e);
+        }
+    }
+
     public static PlanningConstraints createConstraints(String identity, GreenScheduled annotation, Clock clock) {
         List<String> validationErrors = GreenScheduledAnnotationValidation.validateAndReturnValidationErrors(annotation);
         if (!validationErrors.isEmpty()) {
@@ -58,6 +89,7 @@ public class GreenScheduledAnnotationParser {
                 .filter(timeZone -> !timeZone.isEmpty())
                 .map(ZoneId::of)
                 .orElse(ZoneId.systemDefault());
+
         final var optionalFixedWindow = FixedWindowExpressionParser.parse(annotation.fixedWindow(), clock, timeZoneId);
         if (optionalFixedWindow.isPresent()) {
             final var fixedWindow = optionalFixedWindow.get();
@@ -67,8 +99,9 @@ public class GreenScheduledAnnotationParser {
             return DefaultFixedWindowPlanningConstraints.builder()
                     .withIdentity(identity)
                     .withDuration(parseDuration(annotation.duration()))
-                    .withStart(fixedWindow.getStartTime())
-                    .withEnd(fixedWindow.getEndTime())
+                    .withCronExpression(
+                            parseCronExpression(fixedWindow.getStartTime(), annotation.dayOfMonth(), annotation.dayOfWeek()))
+                    .withStartAndEnd(fixedWindow.getStartTime(), fixedWindow.getEndTime())
                     .withZone(annotation.zone())
                     .withTimeZoneId(timeZoneId)
                     .withFallbackCronExpression(fallBackCronExpression)

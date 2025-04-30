@@ -76,6 +76,20 @@ public @interface GreenScheduled {
     String timeZone() default "";
 
     /**
+     * In cron quartz notation Day-of-month, leave empty if every day or Day-of-week must be used
+     *
+     *
+     */
+    String dayOfMonth() default "";
+
+    /**
+     * In cron quartz notation Day-of-week, leave empty if every day or Day-of-month must be used
+     *
+     *
+     */
+    String dayOfWeek() default "";
+
+    /**
      * A custom expression to define the Successive Scheduling constraints.
      * <p>
      * The format is as follows:

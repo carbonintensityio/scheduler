@@ -15,7 +15,7 @@ Over a month we can see significant reductions in the carbon footprint of this j
 
 ## Current state
 
-This scheduler uses carbon intensity data provided by the carbonintensity.io API — a publicly available service developed by the carbonintensity.io team. Access to the API is free and requires an [API key](#requesting-an-apikey).
+This scheduler uses carbon intensity data provided by the carbonintensity.io API — a publicly available service developed by the carbonintensity.io team. Access to the API is free and requires an [API key](#requesting-an-api-key).
 
 The scheduler is tested with Spring and Spring Boot for the NL (Netherlands) zone. For known issues, planned improvements, and feature requests, please refer to the issues section.
 
@@ -36,20 +36,20 @@ Add the following dependency to the pom:
 </dependency>
 ```
 
-In the application.yaml add the following config including the [APIKey](#requesting-an-api-key):
+In the application.yaml add the following config including the [API-key](#requesting-an-api-key):
 
 ```yaml
 greenScheduled:
-  apiKey: { CARBONINTENSITY_API_KEY }
+  api-key: { CARBONINTENSITY_API_KEY }
   api-url: https://carbonintensity-o.cloud.first8.nl
   enabled: true
 ```
 
 Then apply the `@GreenScheduled` annotation on the to be scheduled method. For an example annotation see the [spring-boot-demo](https://github.com/carbonintensityio/green-scheduling-spring-boot-demo) There are 2 types of schedulers:
 
-### Requesting an APIkey
+### Requesting an API-key
 
-To get an API-key to use the GreenScheduled annotation, please email `carbonintensity(at)first8(dot)nl` with the subject "Requesting GreenScheduled APIKey"
+To get an API-key to use the GreenScheduled annotation, please email `carbonintensity(at)first8(dot)nl` with the subject "Requesting GreenScheduled API-key"
 
 #### Fixed
 
@@ -61,7 +61,7 @@ Using the "regular" scheduler:
 
 @Scheduled(cron = "0 0 9 * * ?", zone = "Europe/Amsterdam")
 public void runAt9AM() {
-    // Task to be executed at 6 AM every day
+    // Task to be executed at 9 AM every day
 }
 ```
 
@@ -70,6 +70,41 @@ This would be replaced by the `@GreenScheduled` annotation. The job below might 
 
 @GreenScheduled(fixedWindow = "08:00 17:00", duration = "1h", zone = "NL", timeZone = "Europe/Amsterdam")
 public void greenFixedWindowJob() {
+    // Task to be started at the greenest moment between 08:00 and 17:00
+}
+```
+
+#### Fixed on a specific day
+
+Th green scheduler can also run on a specific day. These days have the same notation as the fields day-of-Month and day-of-Week in a cron expression (Quartz implementation) and can not be used at the same time.  
+
+Using the "regular" scheduler:
+
+```java
+
+@Scheduled(cron = "0 0 9 ? * MON", zone = "Europe/Amsterdam")
+public void runAt9AMonMonday() {
+    // Task to be executed at 9 AM every monday
+}
+
+@Scheduled(cron = "0 0 9 1 * ?", zone = "Europe/Amsterdam")
+public void runAt9AMFirstOfMonth() {
+    // Task to be executed at 9 AM every first of the month
+}
+
+```
+
+Using the green scheduler:
+
+```java
+
+@GreenScheduled(fixedWindow = "08:00 17:00", duration = "1h", zone = "NL", timeZone = "Europe/Amsterdam", dayOfWeek= "MON")
+public void greenFixedWindowJobMonday() {
+    // Task to be started at the greenest moment between 08:00 and 17:00
+}
+
+@GreenScheduled(fixedWindow = "08:00 17:00", duration = "1h", zone = "NL", timeZone = "Europe/Amsterdam", dayOfMonth= "1")
+public void greenFixedWindowJobFirstMonth() {
     // Task to be started at the greenest moment between 08:00 and 17:00
 }
 ```
