@@ -51,8 +51,6 @@ public class SchedulerConfig {
 
     private int jobExecutors = SchedulerDefaults.DEFAULT_NUMBER_OF_JOB_EXECUTORS;
 
-    private int renewExecutors = 10;
-
     public boolean isEnabled() {
         return enabled;
     }
@@ -94,10 +92,6 @@ public class SchedulerConfig {
 
     public void setStartMode(StartMode startMode) {
         this.startMode = Objects.requireNonNull(startMode, "Start mode cannot be null");
-    }
-
-    public int getRenewExecutors() {
-        return this.renewExecutors;
     }
 
     public CarbonIntensityApiConfig getCarbonIntensityApiConfig() {
