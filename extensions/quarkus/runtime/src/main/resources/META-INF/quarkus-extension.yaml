@@ -1,0 +1,5 @@
+name: Green Scheduler Extension
+description: The scheduler will calculate when the best (greenest) time is to run the job.
+metadata:
+  extension-dependencies:
+    - "io.quarkus:quarkus-caffeine"
