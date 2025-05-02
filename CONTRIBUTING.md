@@ -71,6 +71,8 @@ is followed for every pull request.
   We use merge commits so the GitHub Merge button cannot do that for us. If you don't know how to do that, just ask in
   your pull request, we will be happy to help!
 * Please limit the use of lambdas and streams as much as possible in code that executes at runtime, in order to minimize runtime footprint.
+* Code is easy to follow and doesn’t contain commented-out code 
+* No obvious duplication or dead code
 
 ### Continuous Integration
 
