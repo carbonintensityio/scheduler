@@ -56,7 +56,6 @@ import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -297,7 +296,7 @@ public class SchedulerProcessor {
                 .supplier(recorder.createContext(scheduledMetadata))
                 .done());
 
-        return new FeatureBuildItem(Feature.SCHEDULER);
+        return new FeatureBuildItem("green-scheduler");
     }
 
     private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {
