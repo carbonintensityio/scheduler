@@ -1,4 +1,4 @@
-## Descriptio
+## Description
 <!-- Briefly describe what the pull request/change does -->
 
 ## Type of Change
