@@ -25,7 +25,7 @@ public class GetSchedulerJobsTest {
     SimpleScheduler greenScheduler;
 
     @Test
-    public void testSchedulerListScheduledJobsMethod() {
+    public void testGreenScheduledJobsAreRegistered() {
         List<Trigger> triggers = greenScheduler.getScheduledJobs();
         assertEquals(1, triggers.size());
         Trigger trigger = triggers.get(0);
