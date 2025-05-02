@@ -14,7 +14,7 @@ Please delete options that are not relevant
 ## Checklist
 - [ ] Formatted according to the  [CONTRIBUTING guidelines](https://github.com/carbonintensityio/scheduler/blob/main/CONTRIBUTING.md)
 - [ ] Follows the [coding guidelines](https://github.com/carbonintensityio/scheduler/blob/main/CONTRIBUTING.md#coding-guidelines)
-- [ ] Follows the [logging guidelines]()
+- [ ] Follows the [logging guidelines](https://github.com/carbonintensityio/scheduler/blob/main/CONTRIBUTING.md#logging-guidelines)
 - [ ] Tests are added
 - [ ] Build runs successfully
 
