@@ -47,6 +47,10 @@
             <artifactId>quarkus-vertx-http-deployment</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-caffeine-deployment</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
