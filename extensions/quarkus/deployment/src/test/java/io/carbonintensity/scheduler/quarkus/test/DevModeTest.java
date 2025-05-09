@@ -23,7 +23,6 @@ public class DevModeTest extends DevUIJsonRPCTest {
         super("io.carbonintensity.quarkus-green-scheduler");
     }
 
-    // doesn't work yet, DevUI is not active during QuarkusDevModeTest for some reason
     @Test
     public void testGetData() throws Exception {
         JsonNode data = super.executeJsonRPCMethod("getData", Map.of());
