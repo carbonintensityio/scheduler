@@ -9,6 +9,7 @@ fixes, documentation, examples... But first, read this page (including the small
 - [Before you contribute](#before-you-contribute)
     * [Code reviews](#code-reviews)
     * [Coding Guidelines](#coding-guidelines)
+    * [Logging Guidelines](#logging-guidelines)
     * [Continuous Integration](#continuous-integration)
     * [Tests and documentation are not optional](#tests-and-documentation-are-not-optional)
 - [Setup](#setup)
@@ -71,6 +72,16 @@ is followed for every pull request.
   We use merge commits so the GitHub Merge button cannot do that for us. If you don't know how to do that, just ask in
   your pull request, we will be happy to help!
 * Please limit the use of lambdas and streams as much as possible in code that executes at runtime, in order to minimize runtime footprint.
+
+### Logging Guidelines
+* Don't over-log: Avoid logging in tight loops or in situations that would produce excessive output
+* Log errors only once and avoid redundant logging
+* All log entries must be made using the SLF4J logger
+* Use the appropriate log levels:
+   * `DEBUG` – Internal details such as inputs or computed values.
+   * `INFO` – Key events like "Scheduler started" or "Job completed".
+   * `WARN` – Recoverable issues or unexpected conditions.
+   * `ERROR` – Unrecoverable failures requiring investigation.
 
 ### Continuous Integration
 
