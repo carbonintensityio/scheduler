@@ -63,6 +63,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -83,6 +84,11 @@ public class SchedulerProcessor {
 
     static final String INVOKER_SUFFIX = "_ScheduledInvoker";
     static final String NESTED_SEPARATOR = "$_";
+
+    @BuildStep
+    NativeImageResourceDirectoryBuildItem nativeImageResourceBuildItem() {
+        return new NativeImageResourceDirectoryBuildItem("fallback");
+    }
 
     @BuildStep
     void beans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
