@@ -9,7 +9,7 @@ fixes, documentation, examples... But first, read this page (including the small
 - [Before you contribute](#before-you-contribute)
     * [Code reviews](#code-reviews)
     * [Coding Guidelines](#coding-guidelines)
-    * [Logging Guidelines] (#logging-guidelines)
+    * [Logging Guidelines](#logging-guidelines)
     * [Continuous Integration](#continuous-integration)
     * [Tests and documentation are not optional](#tests-and-documentation-are-not-optional)
 - [Setup](#setup)
