@@ -18,8 +18,8 @@
     </modules>
 
     <properties>
-        <quarkus.version>3.21.2</quarkus.version>
-        <surefire-plugin.version>3.5.2</surefire-plugin.version>
+        <quarkus.version>3.22.2</quarkus.version>
+        <surefire-plugin.version>3.5.3</surefire-plugin.version>
         <failsafe-plugin.version>${surefire-plugin.version}</failsafe-plugin.version>
     </properties>
 
