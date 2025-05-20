@@ -15,7 +15,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: ${{github.event.pull_request.merged == true}}
+    if: ${{ github.event.pull_request.merged == true }}
 
     steps:
       - name: Checkout
@@ -25,7 +25,7 @@ jobs:
         uses: radcortez/project-metadata-action@main
         id: metadata
         with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           metadata-file-path: '.github/project.yml'
           local-file: 'true'
 
@@ -40,6 +40,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
           cache: 'maven'
+          # Setup Maven Central portal
+          server-id: central
+          server-username: ${{ secrets.MAVEN_USERNAME }}
+          server-password: ${{ secrets.MAVEN_PASSWORD }}
 
       - name: Setup GPG signing
         run: |
@@ -51,8 +55,8 @@ jobs:
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
-      - name: Build artefact
-        run: ./mvnw $COMMON_MAVEN_ARGS --file pom.xml -Drevision=${{steps.metadata.outputs.current-version}} -Dgpg.keyname=${{ secrets.GPG_KEY_ID }} -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }} deploy
+      - name: Build, sign & publish artefact
+        run: ./mvnw $COMMON_MAVEN_ARGS --file pom.xml -Drevision=${{ steps.metadata.outputs.current-version }} -Dgpg.keyname=${{ secrets.GPG_KEY_ID }} -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }} deploy
 
       - name: Tag
         uses: hole19/git-tag-action@master
