@@ -17,6 +17,7 @@
 
     <properties>
         <revision>999-SNAPSHOT</revision>
+
         <!-- Plugin versions (please keep in alphabetical order) -->
         <version.archetype.plugin>3.3.1</version.archetype.plugin>
         <version.buildhelper.plugin>3.6.0</version.buildhelper.plugin>
@@ -495,32 +496,38 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <!--                    <plugin>-->
-                    <!--                        &lt;!&ndash;-->
-                    <!--                        ## IMPORTANT ##-->
-                    <!--                        In your ~/.m2/settings.xml you need to add and edit the following profile:-->
-                    <!--                        <profile>-->
-                    <!--                            <id>release</id>-->
-                    <!--                            <properties>-->
-                    <!--                                <gpg.useagent>false</gpg.useagent>-->
-                    <!--                                <gpg.executable>/usr/local/Cellar/gnupg@1.4/1.4.23_1/bin/gpg1</gpg.executable> <- use gpg1 on Mac OS X-->
-                    <!--                                <gpg.homedir>~/.gnupg</gpg.homedir>  <- Update to your own directory-->
-                    <!--                                <gpg.passphrase>******</gpg.passphrase> <- Add your passphrase-->
-                    <!--                            </properties>-->
-                    <!--                        </profile>-->
-                    <!--                         &ndash;&gt;-->
-                    <!--                        <groupId>org.apache.maven.plugins</groupId>-->
-                    <!--                        <artifactId>maven-gpg-plugin</artifactId>-->
-                    <!--                        <executions>-->
-                    <!--                            <execution>-->
-                    <!--                                <id>sign-artifacts</id>-->
-                    <!--                                <phase>verify</phase>-->
-                    <!--                                <goals>-->
-                    <!--                                    <goal>sign</goal>-->
-                    <!--                                </goals>-->
-                    <!--                            </execution>-->
-                    <!--                        </executions>-->
-                    <!--                    </plugin>-->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>3.2.7</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <gpgArguments>
+                                <!-- Required for GitHub actions -->
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.7.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <!-- Automagically publish -->
+<!--                            <autoPublish>true</autoPublish>-->
+                        </configuration>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-jar-plugin</artifactId>
