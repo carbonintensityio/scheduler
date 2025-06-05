@@ -26,13 +26,33 @@ on:
       - '.gitignore'
       - 'CODEOWNERS'
       - 'LICENSE'
-      - '*.md'
       - '*.adoc'
       - '*.txt'
       - '.all-contributorsrc'
 
 jobs:
+  check:
+    # Check if there are other than .md files changed, if so do run full pipeline
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for code changes
+        id: changes
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          changes=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
+          echo "Changed files: $changes"
+          if echo "$changes" | grep -vE '\.(md)$'; then
+            echo "::set-output name=code_changed::true"
+          else
+            echo "::set-output name=code_changed::false"
+          fi
+
   build:
+    needs: check
+    if: needs.check.outputs.code_changed == 'true'
     runs-on: ubuntu-latest
 
     steps:
