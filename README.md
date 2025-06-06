@@ -140,6 +140,9 @@ public void greenSuccessiveWindowJob() {
 }
 ```
 
+### Supported zones
+Currently only the Netherlands (NL) is supported but more zones will follow.
+
 ## Acknowledgements
 
 The maven project structure and all documentation regarding contribution is adapted from
