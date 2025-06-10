@@ -33,7 +33,6 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-
             <plugin>
                 <artifactId>maven-dependency-plugin</artifactId>
                 <executions>
@@ -63,7 +62,6 @@
                     </systemProperties>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
 
@@ -123,6 +121,4 @@
             <scope>compile</scope>
         </dependency>
     </dependencies>
-
-
 </project>
