@@ -1,4 +1,4 @@
-package io.carbonintensity.scheduler.spring.factory;
+package io.carbonintensity.scheduler.runtime.impl;
 
 import java.util.List;
 
@@ -6,7 +6,7 @@ import io.carbonintensity.scheduler.runtime.ScheduledMethod;
 import io.carbonintensity.scheduler.runtime.SchedulerContext;
 
 /**
- * Scheduler context. Can be removed if scheduler-core provides any implementation.
+ * Scheduler context
  */
 public class SchedulerContextImpl implements SchedulerContext {
 

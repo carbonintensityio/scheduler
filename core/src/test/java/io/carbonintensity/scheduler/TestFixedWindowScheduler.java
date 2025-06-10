@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -120,6 +121,345 @@ class TestFixedWindowScheduler {
         mutableClock.shift(Duration.ofDays(1));
         Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
                 .until(() -> cdl.getCount() == 0);
+        Assertions.assertThat(cdl.getCount()).isZero();
+    }
+
+    @Test
+    void testFixedWindowSchedulerMonday() throws InterruptedException {
+        CountDownLatch cdl = new CountDownLatch(2);
+
+        //always start the test on first sunday from now
+        int daysUntilSunday = 7 - LocalDate.now().getDayOfWeek().getValue();
+
+        ScheduledInvoker scheduledCountDownInvoker = execution -> {
+            try {
+                log.info("Invoked scheduledCountDownInvoker executing countdown...");
+                cdl.countDown();
+                return CompletableFuture.completedStage(null);
+            } catch (Exception e) {
+                return CompletableFuture.failedStage(e);
+            }
+        };
+
+        GreenScheduled greenScheduled = mock(GreenScheduled.class);
+        when(greenScheduled.fixedWindow()).thenReturn("05:15 08:15");
+        when(greenScheduled.zone()).thenReturn("NL");
+        when(greenScheduled.duration()).thenReturn("2h");
+        when(greenScheduled.identity()).thenReturn("test");
+        when(greenScheduled.overdueGracePeriod()).thenReturn("PT90S");
+        when(greenScheduled.timeZone()).thenReturn("Europe/Amsterdam");
+        when(greenScheduled.dayOfWeek()).thenReturn("MON");
+        when(greenScheduled.skipExecutionIf()).thenAnswer(invocationOnMock -> SkipPredicate.Never.class);
+
+        ImmutableScheduledMethod immutableScheduledMethod = new ImmutableScheduledMethod(
+                scheduledCountDownInvoker,
+                this.getClass().getName(),
+                "testFixedWindowScheduler",
+                List.of(greenScheduled));
+
+        ZoneId zone = ZoneId.of("UTC");
+        // Create a mutable clock so that we can properly simulate running through a fixedTimeFrame
+        MutableClock mutableClock = new MutableClock(
+                Clock.fixed(ZonedDateTime
+                        .of(LocalDateTime.of(LocalDate.now().plusDays(daysUntilSunday), LocalTime.of(4, 16)),
+                                ZoneId.of("Europe/Amsterdam"))
+                        .toInstant(),
+                        zone));
+
+        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
+                .withScheduledMethod(immutableScheduledMethod)
+                .build(), new SchedulerConfig(), dataFetcher, null,
+                mutableClock);
+        mutableClock.getNotifier().register(scheduler);
+
+        scheduler.start();
+
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, according to the schedule, it should not run.
+        Assertions.assertThat(cdl.getCount()).isEqualTo(2);
+
+        // shift the clock to 7:16 which is at the "most green time", but not on monday so it should not run yet
+        mutableClock.shift(Duration.ofHours(3));
+
+        Thread.sleep(SCHEDULER_WAITING_PERIOD);
+        Assertions.assertThat(cdl.getCount()).isEqualTo(2);
+
+        // shift the clock to next day 7:16 which is at the "most green time", so it should run
+        mutableClock.shift(Duration.ofDays(1));
+        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+                .until(() -> cdl.getCount() == 1);
+
+        mutableClock.shift(Duration.ofMinutes(4));
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, it should not run twice
+        Assertions.assertThat(cdl.getCount()).isEqualTo(1);
+
+        mutableClock.shift(Duration.ofDays(6));
+        Thread.sleep(SCHEDULER_WAITING_PERIOD);
+        Assertions.assertThat(cdl.getCount()).isEqualTo(1);
+
+        // shift the clock to next week 7:16 which is at the "most green time", so it should run
+        mutableClock.shift(Duration.ofDays(1));
+        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+                .until(() -> cdl.getCount() == 0);
+        Assertions.assertThat(cdl.getCount()).isZero();
+    }
+
+    @Test
+    void testFixedWindowSchedulerSecondOfMonth() throws InterruptedException {
+        CountDownLatch cdl = new CountDownLatch(2);
+
+        //always start the test on 1st day of month
+        int daysFurtherThanFirst = LocalDate.now().getDayOfMonth() - 1;
+
+        ScheduledInvoker scheduledCountDownInvoker = execution -> {
+            try {
+                log.info("Invoked scheduledCountDownInvoker executing countdown...");
+                cdl.countDown();
+                return CompletableFuture.completedStage(null);
+            } catch (Exception e) {
+                return CompletableFuture.failedStage(e);
+            }
+        };
+
+        GreenScheduled greenScheduled = mock(GreenScheduled.class);
+        when(greenScheduled.fixedWindow()).thenReturn("05:15 08:15");
+        when(greenScheduled.zone()).thenReturn("NL");
+        when(greenScheduled.duration()).thenReturn("2h");
+        when(greenScheduled.identity()).thenReturn("test");
+        when(greenScheduled.overdueGracePeriod()).thenReturn("PT90S");
+        when(greenScheduled.timeZone()).thenReturn("Europe/Amsterdam");
+        when(greenScheduled.dayOfMonth()).thenReturn("2");
+        when(greenScheduled.skipExecutionIf()).thenAnswer(invocationOnMock -> SkipPredicate.Never.class);
+
+        ImmutableScheduledMethod immutableScheduledMethod = new ImmutableScheduledMethod(
+                scheduledCountDownInvoker,
+                this.getClass().getName(),
+                "testFixedWindowScheduler",
+                List.of(greenScheduled));
+
+        ZoneId zone = ZoneId.of("UTC");
+        // Create a mutable clock so that we can properly simulate running through a fixedTimeFrame
+        MutableClock mutableClock = new MutableClock(
+                Clock.fixed(ZonedDateTime
+                        .of(LocalDateTime.of(LocalDate.now().minusDays(daysFurtherThanFirst), LocalTime.of(4, 16)),
+                                ZoneId.of("Europe/Amsterdam"))
+                        .toInstant(),
+                        zone));
+
+        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
+                .withScheduledMethod(immutableScheduledMethod)
+                .build(), new SchedulerConfig(), dataFetcher, null,
+                mutableClock);
+        mutableClock.getNotifier().register(scheduler);
+
+        scheduler.start();
+
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, according to the schedule, it should not run.
+        Assertions.assertThat(cdl.getCount()).isEqualTo(2);
+
+        // shift the clock to 7:16 which is at the "most green time", but not on 1st so it should not run yet
+        mutableClock.shift(Duration.ofHours(3));
+
+        Thread.sleep(SCHEDULER_WAITING_PERIOD);
+        Assertions.assertThat(cdl.getCount()).isEqualTo(2);
+
+        // shift the clock to next day 7:16 which is at the "most green time", so it should run
+        mutableClock.shift(Duration.ofDays(1));
+        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+                .until(() -> cdl.getCount() == 1);
+
+        mutableClock.shift(Duration.ofMinutes(4));
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, it should not run twice
+        Assertions.assertThat(cdl.getCount()).isEqualTo(1);
+
+        mutableClock.shift(Duration.ofDays(1));
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); //should not do anything next day
+        Assertions.assertThat(cdl.getCount()).isEqualTo(1);
+
+        // shift the clock to next month 7:16 which is at the "most green time", so it should run
+        mutableClock.shift(Duration.ofDays(27));
+        List<Integer> monthsWith31Days = Arrays.asList(1, 3, 5, 8, 10, 12);
+        if (monthsWith31Days.contains(LocalDate.now().getMonthValue())) {
+            mutableClock.shift(Duration.ofDays(3));
+        } else if (LocalDate.now().getMonthValue() != 2) {
+            mutableClock.shift(Duration.ofDays(2));
+        }
+        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+                .until(() -> cdl.getCount() == 0);
+        Assertions.assertThat(cdl.getCount()).isZero();
+    }
+
+    @Test
+    void testFixedWindowSchedulerSecondAndFifteenthOfMonth() throws InterruptedException {
+        CountDownLatch cdl = new CountDownLatch(3);
+
+        //always start the test on 1st day of month
+        int daysFurtherThanFirst = LocalDate.now().getDayOfMonth() - 1;
+
+        ScheduledInvoker scheduledCountDownInvoker = execution -> {
+            try {
+                log.info("Invoked scheduledCountDownInvoker executing countdown...");
+                cdl.countDown();
+                return CompletableFuture.completedStage(null);
+            } catch (Exception e) {
+                return CompletableFuture.failedStage(e);
+            }
+        };
+
+        GreenScheduled greenScheduled = mock(GreenScheduled.class);
+        when(greenScheduled.fixedWindow()).thenReturn("05:15 08:15");
+        when(greenScheduled.zone()).thenReturn("NL");
+        when(greenScheduled.duration()).thenReturn("2h");
+        when(greenScheduled.identity()).thenReturn("test");
+        when(greenScheduled.overdueGracePeriod()).thenReturn("PT90S");
+        when(greenScheduled.timeZone()).thenReturn("Europe/Amsterdam");
+        when(greenScheduled.dayOfMonth()).thenReturn("2,15");
+        when(greenScheduled.skipExecutionIf()).thenAnswer(invocationOnMock -> SkipPredicate.Never.class);
+
+        ImmutableScheduledMethod immutableScheduledMethod = new ImmutableScheduledMethod(
+                scheduledCountDownInvoker,
+                this.getClass().getName(),
+                "testFixedWindowScheduler",
+                List.of(greenScheduled));
+
+        ZoneId zone = ZoneId.of("UTC");
+        // Create a mutable clock so that we can properly simulate running through a fixedTimeFrame
+        MutableClock mutableClock = new MutableClock(
+                Clock.fixed(ZonedDateTime
+                        .of(LocalDateTime.of(LocalDate.now().minusDays(daysFurtherThanFirst), LocalTime.of(4, 16)),
+                                ZoneId.of("Europe/Amsterdam"))
+                        .toInstant(),
+                        zone));
+
+        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
+                .withScheduledMethod(immutableScheduledMethod)
+                .build(), new SchedulerConfig(), dataFetcher, null,
+                mutableClock);
+        mutableClock.getNotifier().register(scheduler);
+
+        scheduler.start();
+
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, according to the schedule, it should not run.
+        Assertions.assertThat(cdl.getCount()).isEqualTo(3);
+
+        // shift the clock to 7:16 which is at the "most green time", but not on 1st so it should not run yet
+        mutableClock.shift(Duration.ofHours(3));
+
+        Thread.sleep(SCHEDULER_WAITING_PERIOD);
+        Assertions.assertThat(cdl.getCount()).isEqualTo(3);
+
+        // shift the clock to next day 7:16 which is at the "most green time", so it should run
+        mutableClock.shift(Duration.ofDays(1));
+        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+                .until(() -> cdl.getCount() == 2);
+
+        mutableClock.shift(Duration.ofMinutes(4));
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, it should not run twice
+        Assertions.assertThat(cdl.getCount()).isEqualTo(2);
+
+        mutableClock.shift(Duration.ofDays(12));
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); //should not do anything next 12 days
+        Assertions.assertThat(cdl.getCount()).isEqualTo(2);
+
+        mutableClock.shift(Duration.ofDays(1));
+        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+                .until(() -> cdl.getCount() == 1); //should run the 15th
+        Assertions.assertThat(cdl.getCount()).isEqualTo(1);
+
+        // shift the clock to next month 7:16 which is at the "most green time", so it should run
+        mutableClock.shift(Duration.ofDays(15));
+        List<Integer> monthsWith31Days = Arrays.asList(1, 3, 5, 8, 10, 12);
+        if (monthsWith31Days.contains(LocalDate.now().getMonthValue())) {
+            mutableClock.shift(Duration.ofDays(3));
+        } else if (LocalDate.now().getMonthValue() != 2) {
+            mutableClock.shift(Duration.ofDays(2));
+        }
+        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+                .until(() -> cdl.getCount() == 0);
+        Assertions.assertThat(cdl.getCount()).isZero();
+    }
+
+    @Test
+    void testFixedWindowSchedulerWorkingDays() throws InterruptedException {
+        CountDownLatch cdl = new CountDownLatch(6);
+
+        //always start the test on first sunday from now
+        int daysUntilSunday = 7 - LocalDate.now().getDayOfWeek().getValue();
+
+        ScheduledInvoker scheduledCountDownInvoker = execution -> {
+            try {
+                log.info("Invoked scheduledCountDownInvoker executing countdown...");
+                cdl.countDown();
+                return CompletableFuture.completedStage(null);
+            } catch (Exception e) {
+                return CompletableFuture.failedStage(e);
+            }
+        };
+
+        GreenScheduled greenScheduled = mock(GreenScheduled.class);
+        when(greenScheduled.fixedWindow()).thenReturn("05:15 08:15");
+        when(greenScheduled.zone()).thenReturn("NL");
+        when(greenScheduled.duration()).thenReturn("2h");
+        when(greenScheduled.identity()).thenReturn("test");
+        when(greenScheduled.overdueGracePeriod()).thenReturn("PT90S");
+        when(greenScheduled.timeZone()).thenReturn("Europe/Amsterdam");
+        when(greenScheduled.dayOfWeek()).thenReturn("MON-FRI");
+        when(greenScheduled.skipExecutionIf()).thenAnswer(invocationOnMock -> SkipPredicate.Never.class);
+
+        ImmutableScheduledMethod immutableScheduledMethod = new ImmutableScheduledMethod(
+                scheduledCountDownInvoker,
+                this.getClass().getName(),
+                "testFixedWindowScheduler",
+                List.of(greenScheduled));
+
+        ZoneId zone = ZoneId.of("UTC");
+        // Create a mutable clock so that we can properly simulate running through a fixedTimeFrame
+        MutableClock mutableClock = new MutableClock(
+                Clock.fixed(ZonedDateTime
+                        .of(LocalDateTime.of(LocalDate.now().plusDays(daysUntilSunday), LocalTime.of(4, 16)),
+                                ZoneId.of("Europe/Amsterdam"))
+                        .toInstant(),
+                        zone));
+
+        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
+                .withScheduledMethod(immutableScheduledMethod)
+                .build(), new SchedulerConfig(), dataFetcher, null,
+                mutableClock);
+        mutableClock.getNotifier().register(scheduler);
+
+        scheduler.start();
+
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, according to the schedule, it should not run.
+        Assertions.assertThat(cdl.getCount()).isEqualTo(6);
+
+        // shift the clock to 7:16 which is at the "most green time", but not on monday so it should not run yet
+        mutableClock.shift(Duration.ofHours(3));
+
+        Thread.sleep(SCHEDULER_WAITING_PERIOD);
+        Assertions.assertThat(cdl.getCount()).isEqualTo(6);
+
+        int counter = 5;
+        while (counter > 0) {
+            mutableClock.shift(Duration.ofDays(1));
+            int countEffectiveFinal = counter;
+            Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+                    .until(() -> cdl.getCount() == countEffectiveFinal);
+            mutableClock.shift(Duration.ofMinutes(4));
+            Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, it should not run twice
+            Assertions.assertThat(cdl.getCount()).isEqualTo(counter);
+            counter--;
+        }
+
+        // shift the clock to next sunday 7:16 which is a weekend day so it should not have run anymore
+        mutableClock.shift(Duration.ofDays(2));
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, according to the schedule, it should not run.
+        Assertions.assertThat(cdl.getCount()).isEqualTo(1);
+
+        //shift the clock to next monday, for one last run
+        mutableClock.shift(Duration.ofDays(1));
+        Awaitility.waitAtMost(SCHEDULER_WAITING_PERIOD, TimeUnit.MILLISECONDS)
+                .until(() -> cdl.getCount() == 0);
+        mutableClock.shift(Duration.ofMinutes(4));
+        Thread.sleep(SCHEDULER_WAITING_PERIOD); // Sleep a few seconds, it should not run twice
         Assertions.assertThat(cdl.getCount()).isZero();
     }
 

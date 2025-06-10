@@ -3,6 +3,8 @@ package io.carbonintensity.scheduler.runtime.impl.annotation;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.cronutils.utils.StringUtils;
+
 import io.carbonintensity.scheduler.GreenScheduled;
 
 /**
@@ -26,18 +28,23 @@ public class GreenScheduledAnnotationValidation {
     static List<String> validateAndReturnValidationErrors(GreenScheduled annotation) {
         List<String> validationErrors = new ArrayList<>();
         if ((annotation.fixedWindow() == null && annotation.successive() == null) ||
-                (annotation.fixedWindow() != null && !annotation.fixedWindow().isEmpty() &&
-                        annotation.successive() != null && !annotation.successive().isEmpty())) {
+                (!StringUtils.isEmpty(annotation.fixedWindow()) && !StringUtils.isEmpty(annotation.successive()))) {
             validationErrors.add("Either fixedWindow or successive must be specified");
         }
 
-        if (annotation.zone() == null || annotation.zone().isEmpty()) {
+        if (StringUtils.isEmpty(annotation.zone())) {
             validationErrors.add("Zone must be specified");
         }
 
-        if (annotation.fixedWindow() != null && (annotation.duration() == null || annotation.duration().isEmpty())) {
+        if (annotation.fixedWindow() != null && StringUtils.isEmpty(annotation.duration())) {
             validationErrors.add("Duration must be specified when fixedWindow is specified");
         }
+
+        if (!StringUtils.isEmpty(annotation.dayOfMonth()) && !StringUtils.isEmpty(annotation.dayOfWeek())) {
+            validationErrors.add("Day of month and day of week can not both be specified ");
+        }
+
         return validationErrors;
     }
+
 }

@@ -13,6 +13,7 @@ import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityRest
 import io.carbonintensity.scheduler.runtime.ScheduledMethod;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.runtime.SimpleScheduler;
+import io.carbonintensity.scheduler.runtime.impl.SchedulerContextImpl;
 import io.carbonintensity.scheduler.runtime.impl.rest.CarbonIntensityFileApi;
 
 /**

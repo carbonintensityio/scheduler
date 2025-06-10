@@ -18,7 +18,7 @@ class GreenScheduledPropertiesTests {
         assertThat(properties.getEnabled()).hasValue(true);
         assertThat(properties.getJobExecutors()).hasValue(DEFAULT_NUMBER_OF_JOB_EXECUTORS);
         assertThat(properties.getOverdueGracePeriod()).hasValue(DEFAULT_OVERDUE_GRACE_PERIOD);
-        assertThat(properties.getShutdownGracePeriod()).hasValue(DEFAULT_SHUTDOWN_GRADE_PERIOD);
+        assertThat(properties.getShutdownGracePeriod()).hasValue(DEFAULT_SHUTDOWN_GRACE_PERIOD);
         assertThat(properties.getApiUrl()).hasValue(DEFAULT_API_URL);
         assertThat(properties.getApiKey()).isNotPresent();
     }

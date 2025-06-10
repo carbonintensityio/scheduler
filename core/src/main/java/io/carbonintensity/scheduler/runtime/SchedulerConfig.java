@@ -41,7 +41,7 @@ public class SchedulerConfig {
      */
     private Duration overdueGracePeriod = SchedulerDefaults.DEFAULT_OVERDUE_GRACE_PERIOD;
 
-    private Duration shutdownGracePeriod = SchedulerDefaults.DEFAULT_SHUTDOWN_GRADE_PERIOD;
+    private Duration shutdownGracePeriod = SchedulerDefaults.DEFAULT_SHUTDOWN_GRACE_PERIOD;
 
     /**
      * Scheduler can be started in different modes. By default, the scheduler is not started unless a
@@ -50,8 +50,6 @@ public class SchedulerConfig {
     private StartMode startMode = StartMode.NORMAL;
 
     private int jobExecutors = SchedulerDefaults.DEFAULT_NUMBER_OF_JOB_EXECUTORS;
-
-    private int renewExecutors = 10;
 
     public boolean isEnabled() {
         return enabled;
@@ -94,10 +92,6 @@ public class SchedulerConfig {
 
     public void setStartMode(StartMode startMode) {
         this.startMode = Objects.requireNonNull(startMode, "Start mode cannot be null");
-    }
-
-    public int getRenewExecutors() {
-        return this.renewExecutors;
     }
 
     public CarbonIntensityApiConfig getCarbonIntensityApiConfig() {

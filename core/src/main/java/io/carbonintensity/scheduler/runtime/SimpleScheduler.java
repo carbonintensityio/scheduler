@@ -106,7 +106,6 @@ public class SimpleScheduler implements Scheduler {
     private ScheduledExecutorService scheduledExecutor;
     private ScheduledFuture<?> scheduledFuture;
     private ExecutorService jobExecutor;
-    private ExecutorService renewExecutor;
     private volatile boolean running;
     private final ConcurrentMap<String, ScheduledTask> scheduledTasks;
     private final boolean enabled;
@@ -235,30 +234,8 @@ public class SimpleScheduler implements Scheduler {
                     return t;
                 }
             };
-            // This executor  is used to run all jobs
+            // This executor is used to run all jobs
             this.jobExecutor = Executors.newFixedThreadPool(schedulerConfig.getJobExecutors(), jtf);
-        }
-
-        if (this.renewExecutor == null) {
-            ThreadFactory jtf = new ThreadFactory() {
-
-                private final AtomicInteger threadNumber = new AtomicInteger(1);
-
-                @Override
-                public Thread newThread(Runnable runnable) {
-                    Thread t = new Thread(Thread.currentThread()
-                            .getThreadGroup(), runnable, "green-scheduler-renew-executor-" + threadNumber.getAndIncrement(), 0);
-                    if (t.isDaemon()) {
-                        t.setDaemon(false);
-                    }
-                    if (t.getPriority() != Thread.NORM_PRIORITY) {
-                        t.setPriority(Thread.NORM_PRIORITY);
-                    }
-                    return t;
-                }
-            };
-            // This executor  is used to run all jobs
-            this.renewExecutor = Executors.newFixedThreadPool(schedulerConfig.getRenewExecutors(), jtf);
         }
     }
 
@@ -294,16 +271,8 @@ public class SimpleScheduler implements Scheduler {
             log.warn("Unable to shutdown the scheduler executor", e);
         }
         try {
-            if (renewExecutor != null) {
-                renewExecutor.shutdownNow();
-                renewExecutor = null;
-            }
-        } catch (Exception e) {
-            log.warn("Unable to shutdown the renew executor", e);
-        }
-        try {
             if (jobExecutor != null) {
-                jobExecutor.shutdownNow();
+                jobExecutor.shutdown();
                 try {
                     if (!jobExecutor.awaitTermination(schedulerConfig.getShutdownGracePeriod()
                             .getSeconds(), TimeUnit.SECONDS)) {
@@ -660,16 +629,6 @@ public class SimpleScheduler implements Scheduler {
          */
         abstract ZonedDateTime evaluate(ZonedDateTime now);
 
-        /**
-         * Called to renew the trigger schedule.
-         * <p>
-         * Not all triggers use it.
-         *
-         * @param now The current date-time in the default time zone
-         */
-        void renew(ZonedDateTime now) {
-        }
-
         @Override
         public Instant getPreviousFireTime() {
             ZonedDateTime last = lastFireTime;
@@ -822,8 +781,7 @@ public class SimpleScheduler implements Scheduler {
                         log.trace("{} fired, trigger={}, updating constraints for next run", this, nextTruncated);
                         lastFireTime = now;
                         constraints = DefaultFixedWindowPlanningConstraints.from(constraints)
-                                .withStart(constraints.getStart().plusDays(1))
-                                .withEnd(constraints.getEnd().plusDays(1))
+                                .withStartAndEnd(constraints.getStart().plusDays(1), constraints.getEnd().plusDays(1))
                                 .build();
                         return nextExecutionTime;
                     }
