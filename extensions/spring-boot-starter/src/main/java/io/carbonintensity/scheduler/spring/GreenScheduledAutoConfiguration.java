@@ -1,7 +1,5 @@
 package io.carbonintensity.scheduler.spring;
 
-import java.time.Clock;
-
 import jakarta.annotation.PreDestroy;
 
 import org.slf4j.Logger;
@@ -16,10 +14,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 
+import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
 import io.carbonintensity.scheduler.GreenScheduled;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.runtime.SimpleScheduler;
-import io.carbonintensity.scheduler.spring.factory.*;
+import io.carbonintensity.scheduler.spring.factory.ScheduledMethodFactory;
+import io.carbonintensity.scheduler.spring.factory.SchedulerConfigBuilder;
+import io.carbonintensity.scheduler.spring.factory.SchedulerFactory;
+import io.carbonintensity.scheduler.spring.factory.SimpleSchedulerFactory;
+import io.carbonintensity.scheduler.spring.factory.SpringSchedulerFactory;
 
 /**
  * Green Scheduler Spring {@link AutoConfiguration}.
@@ -49,10 +52,17 @@ public class GreenScheduledAutoConfiguration {
     @Autowired
     private GreenScheduledProperties greenScheduledProperties;
 
+    @Autowired(required = false)
+    private CarbonIntensityApi carbonIntensityApi;
+
     @Bean
     @ConditionalOnMissingBean
     public SchedulerConfig schedulerConfig() {
-        return new SchedulerConfigBuilder(greenScheduledProperties).build();
+        var configBuilder = new SchedulerConfigBuilder(greenScheduledProperties);
+        if (carbonIntensityApi != null) {
+            configBuilder.carbonIntensityApi(carbonIntensityApi);
+        }
+        return configBuilder.build();
     }
 
     @Bean(name = "greenScheduled")
@@ -61,13 +71,8 @@ public class GreenScheduledAutoConfiguration {
     }
 
     @Bean
-    public Clock clock() {
-        return Clock.systemDefaultZone();
-    }
-
-    @Bean
-    public SchedulerFactory schedulerFactory(Clock clock) {
-        return new SimpleSchedulerFactory(clock);
+    public SchedulerFactory schedulerFactory() {
+        return new SimpleSchedulerFactory();
     }
 
     @Autowired
@@ -81,7 +86,6 @@ public class GreenScheduledAutoConfiguration {
     @EventListener
     public void handleContextStart(ContextRefreshedEvent event) {
         var simpleScheduler = (SimpleScheduler) springSchedulerFactory().getObject();
-        this.simpleScheduler = (SimpleScheduler) springSchedulerFactory().getObject();
         while (greenScheduledBeanProcessor.hasNext()) {
             var beanInfo = greenScheduledBeanProcessor.next();
             logger.info("Scheduling bean {}", beanInfo.getBean());

@@ -6,5 +6,4 @@ public interface SchedulerContext {
 
     List<ScheduledMethod> getScheduledMethods();
 
-    boolean forceSchedulerStart();
 }

@@ -1,6 +1,5 @@
 package io.carbonintensity.scheduler;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -14,12 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcher;
-import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcherImpl;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.runtime.SimpleScheduler;
-import io.carbonintensity.scheduler.runtime.impl.rest.CarbonIntensityFileApi;
 import io.carbonintensity.scheduler.test.helper.DisabledDummyCarbonIntensityApi;
 
 class TestDefaultCarbonIntensityProgrammatic {
@@ -29,15 +25,12 @@ class TestDefaultCarbonIntensityProgrammatic {
     private AtomicInteger jobId;
     private final CarbonIntensityApi disabledApi = new DisabledDummyCarbonIntensityApi();
 
-    private final CarbonIntensityDataFetcher dataFetcher = new CarbonIntensityDataFetcherImpl(disabledApi,
-            new CarbonIntensityFileApi());
-
     @BeforeEach
     public void beforeEach() {
         jobId = new AtomicInteger(0);
-
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder().build(), new SchedulerConfig(), dataFetcher, null,
-                Clock.systemDefaultZone());
+        var schedulerConfig = new SchedulerConfig();
+        schedulerConfig.setCarbonIntensityApi(disabledApi);
+        scheduler = new SimpleScheduler(schedulerConfig);
     }
 
     @AfterEach
