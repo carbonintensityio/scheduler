@@ -16,8 +16,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiException;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 
 @ExtendWith(MockitoExtension.class)
 class TestCarbonIntensityDataFetcher {

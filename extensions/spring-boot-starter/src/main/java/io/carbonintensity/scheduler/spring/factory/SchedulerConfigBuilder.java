@@ -4,8 +4,8 @@ import java.time.Duration;
 
 import org.springframework.util.Assert;
 
-import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiConfig;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.spring.GreenScheduledProperties;
 

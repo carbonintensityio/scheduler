@@ -2,8 +2,8 @@ package io.carbonintensity.scheduler.quarkus.factory;
 
 import java.time.Duration;
 
-import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiConfig;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.runtime.SchedulerDefaults;
 
