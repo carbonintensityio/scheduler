@@ -20,20 +20,18 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.carbonintensity.executionplanner.planner.successive.SuccessivePlanner;
-import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcher;
-import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcherImpl;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
 import io.carbonintensity.scheduler.runtime.ImmutableScheduledMethod;
 import io.carbonintensity.scheduler.runtime.ScheduledInvoker;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.runtime.SimpleScheduler;
-import io.carbonintensity.scheduler.runtime.impl.rest.CarbonIntensityFileApi;
 import io.carbonintensity.scheduler.test.helper.DisabledDummyCarbonIntensityApi;
 import io.carbonintensity.scheduler.test.helper.MutableClock;
 
@@ -43,9 +41,13 @@ class TestSuccessiveWindowScheduler {
     public static final long SCHEDULER_WAITING_PERIOD = 101L; // minimum accepted by Awaitility
     private SimpleScheduler scheduler;
     private final CarbonIntensityApi disabledApi = new DisabledDummyCarbonIntensityApi();
+    private SchedulerConfig schedulerConfig;
 
-    private final CarbonIntensityDataFetcher dataFetcher = new CarbonIntensityDataFetcherImpl(disabledApi,
-            new CarbonIntensityFileApi());
+    @BeforeEach
+    public void beforeEach() {
+        schedulerConfig = new SchedulerConfig();
+        schedulerConfig.setCarbonIntensityApi(disabledApi);
+    }
 
     @AfterEach
     public void afterEach() {
@@ -90,10 +92,9 @@ class TestSuccessiveWindowScheduler {
                         .of(LocalDateTime.of(LocalDate.now(), LocalTime.of(7, 16)), ZoneId.of("Europe/Amsterdam")).toInstant(),
                         zone));
 
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                .withScheduledMethod(immutableScheduledMethod)
-                .build(), new SchedulerConfig(), dataFetcher, null,
-                mutableClock);
+        schedulerConfig.setClock(mutableClock);
+        scheduler = new SimpleScheduler(schedulerConfig);
+        scheduler.scheduleMethod(immutableScheduledMethod);
         mutableClock.getNotifier().register(scheduler);
         scheduler.start();
 
@@ -161,15 +162,14 @@ class TestSuccessiveWindowScheduler {
                 Clock.fixed(ZonedDateTime
                         .of(LocalDateTime.of(LocalDate.now(), LocalTime.of(4, 16)), ZoneId.of("Europe/Amsterdam")).toInstant(),
                         zone));
+        schedulerConfig.setClock(mutableClock);
 
         try (MockedConstruction<SuccessivePlanner> successivePlannerMockedConstruction = mockConstruction(
                 SuccessivePlanner.class, (mock, context) -> {
                     when(mock.canSchedule(any())).thenReturn(false);
                 });) {
-            scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                    .withScheduledMethod(immutableScheduledMethod)
-                    .build(), new SchedulerConfig(), dataFetcher, null,
-                    mutableClock);
+            scheduler = new SimpleScheduler(schedulerConfig);
+            scheduler.scheduleMethod(immutableScheduledMethod);
             mutableClock.getNotifier().register(scheduler);
             scheduler.start();
             mutableClock.getNotifier().nofity();

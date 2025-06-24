@@ -35,7 +35,6 @@ class SpringSchedulerFactoryTest {
         springFactory.setSchedulerFactory(schedulerFactory);
         springFactory.setSchedulerConfig(schedulerConfig);
         springFactory.setJobListener(jobListener);
-
     }
 
     @Test
@@ -52,4 +51,5 @@ class SpringSchedulerFactoryTest {
         verifyNoMoreInteractions(scheduler);
         assertThat(springFactory.getObject()).isEqualTo(scheduler);
     }
+
 }

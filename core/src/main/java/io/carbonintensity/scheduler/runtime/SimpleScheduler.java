@@ -38,6 +38,9 @@ import io.carbonintensity.executionplanner.planner.successive.DefaultSuccessiveP
 import io.carbonintensity.executionplanner.planner.successive.SuccessivePlanner;
 import io.carbonintensity.executionplanner.planner.successive.SuccessivePlanningConstraints;
 import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcher;
+import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcherImpl;
+import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiType;
+import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityRestApi;
 import io.carbonintensity.executionplanner.spi.CarbonIntensityPlanner;
 import io.carbonintensity.executionplanner.spi.PlanningConstraints;
 import io.carbonintensity.scheduler.ConcurrentExecution;
@@ -48,6 +51,7 @@ import io.carbonintensity.scheduler.SkipPredicate;
 import io.carbonintensity.scheduler.Trigger;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig.StartMode;
 import io.carbonintensity.scheduler.runtime.impl.annotation.GreenScheduledAnnotationParser;
+import io.carbonintensity.scheduler.runtime.impl.rest.CarbonIntensityFileApi;
 import io.carbonintensity.scheduler.spi.JobInstrumenter;
 
 /**
@@ -80,7 +84,7 @@ import io.carbonintensity.scheduler.spi.JobInstrumenter;
  * <h3>Usage</h3>
  *
  * <pre>{@code
- * SimpleScheduler scheduler = new SimpleScheduler(context, config, dataFetcher, instrumenter, clock);
+ * SimpleScheduler scheduler = new SimpleScheduler(config);
  * scheduler.start();
  * }</pre>
  *
@@ -101,7 +105,7 @@ public class SimpleScheduler implements Scheduler {
     // milliseconds
     public static final long CHECK_PERIOD = 1000L;
 
-    private final CarbonIntensityDataFetcher dataFetcher;
+    private CarbonIntensityDataFetcher dataFetcher;
     private final Clock clock;
     private ScheduledExecutorService scheduledExecutor;
     private ScheduledFuture<?> scheduledFuture;
@@ -114,20 +118,14 @@ public class SimpleScheduler implements Scheduler {
     private final List<EventListener> eventListeners;
     private final Events events;
 
-    public SimpleScheduler(
-            SchedulerContext context,
-            SchedulerConfig schedulerConfig,
-            CarbonIntensityDataFetcher dataFetcher,
-            JobInstrumenter jobInstrumenter,
-            Clock clock) {
-        this.dataFetcher = dataFetcher;
-        this.clock = clock;
+    public SimpleScheduler(SchedulerConfig schedulerConfig) {
+        this.clock = schedulerConfig.getClock();
         this.events = new Events(this);
         this.running = false;
         this.enabled = schedulerConfig.isEnabled();
         this.scheduledTasks = new ConcurrentHashMap<>();
         this.schedulerConfig = schedulerConfig;
-        this.jobInstrumenter = jobInstrumenter;
+        this.jobInstrumenter = schedulerConfig.getJobInstrumenter();
         this.eventListeners = new ArrayList<>();
 
         if (!schedulerConfig.isEnabled()) {
@@ -135,21 +133,14 @@ public class SimpleScheduler implements Scheduler {
             return;
         }
 
-        StartMode startMode = schedulerConfig.getStartMode();
-        if (startMode == StartMode.NORMAL && context.getScheduledMethods()
-                .isEmpty() && !context.forceSchedulerStart()) {
-            log.info("No scheduled business methods found - Simple scheduler will be started on first programmatic job.");
-            return;
-        }
+        var carbonIntensityApi = schedulerConfig.getCarbonIntensityApi() != null ? schedulerConfig.getCarbonIntensityApi()
+                : new CarbonIntensityRestApi(schedulerConfig.getCarbonIntensityApiConfig(), CarbonIntensityApiType.PREDICTED);
 
-        if (context.forceSchedulerStart()) {
+        this.dataFetcher = new CarbonIntensityDataFetcherImpl(carbonIntensityApi, new CarbonIntensityFileApi());
+
+        if (StartMode.FORCED == schedulerConfig.getStartMode()) {
             log.info("Simple scheduler will be started, force scheduler start is enabled.");
             start();
-        }
-
-        // Create triggers and invokers for @Scheduled methods
-        for (ScheduledMethod method : context.getScheduledMethods()) {
-            scheduleMethod(method);
         }
     }
 
