@@ -133,8 +133,8 @@ public class SimpleScheduler implements Scheduler {
             return;
         }
 
-        var carbonIntensityApi = schedulerConfig.getCarbonIntensityApi() != null ? schedulerConfig.getCarbonIntensityApi()
-                : new CarbonIntensityRestApi(schedulerConfig.getCarbonIntensityApiConfig(), CarbonIntensityApiType.PREDICTED);
+        var carbonIntensityApi = Objects.requireNonNullElse(schedulerConfig.getCarbonIntensityApi(),
+                new CarbonIntensityRestApi(schedulerConfig.getCarbonIntensityApiConfig(), CarbonIntensityApiType.PREDICTED));
 
         this.dataFetcher = new CarbonIntensityDataFetcherImpl(carbonIntensityApi, new CarbonIntensityFileApi());
 
