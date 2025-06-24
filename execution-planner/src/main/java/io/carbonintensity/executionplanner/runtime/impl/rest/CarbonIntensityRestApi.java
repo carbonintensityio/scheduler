@@ -11,12 +11,12 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
 
-import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
 import io.carbonintensity.executionplanner.runtime.impl.ZonedCarbonIntensityPeriod;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 
 /**
  * Rest client for fetching prediction data from remote end point.
