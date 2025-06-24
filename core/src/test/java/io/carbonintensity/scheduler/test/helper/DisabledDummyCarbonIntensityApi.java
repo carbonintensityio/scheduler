@@ -4,7 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
 import io.carbonintensity.executionplanner.runtime.impl.ZonedCarbonIntensityPeriod;
-import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 
 public class DisabledDummyCarbonIntensityApi implements CarbonIntensityApi {
 

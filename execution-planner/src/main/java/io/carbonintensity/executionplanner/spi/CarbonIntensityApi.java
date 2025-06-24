@@ -1,4 +1,4 @@
-package io.carbonintensity.executionplanner.runtime.impl.rest;
+package io.carbonintensity.executionplanner.spi;
 
 import java.util.concurrent.CompletableFuture;
 

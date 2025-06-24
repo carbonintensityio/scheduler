@@ -11,6 +11,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.CompletableFuture;
 
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
