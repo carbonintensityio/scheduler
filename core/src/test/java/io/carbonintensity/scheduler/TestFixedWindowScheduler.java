@@ -21,21 +21,19 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedConstruction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.carbonintensity.executionplanner.planner.fixedwindow.FixedWindowPlanner;
-import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcher;
-import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcherImpl;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
 import io.carbonintensity.scheduler.runtime.ImmutableScheduledMethod;
 import io.carbonintensity.scheduler.runtime.ScheduledInvoker;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.runtime.SimpleScheduler;
 import io.carbonintensity.scheduler.runtime.SimpleSchedulerNotifier;
-import io.carbonintensity.scheduler.runtime.impl.rest.CarbonIntensityFileApi;
 import io.carbonintensity.scheduler.test.helper.DisabledDummyCarbonIntensityApi;
 import io.carbonintensity.scheduler.test.helper.MutableClock;
 
@@ -46,8 +44,13 @@ class TestFixedWindowScheduler {
     private SimpleScheduler scheduler;
     private final CarbonIntensityApi disabledApi = new DisabledDummyCarbonIntensityApi();
 
-    private final CarbonIntensityDataFetcher dataFetcher = new CarbonIntensityDataFetcherImpl(disabledApi,
-            new CarbonIntensityFileApi());
+    private SchedulerConfig schedulerConfig;
+
+    @BeforeEach
+    public void beforeEach() {
+        schedulerConfig = new SchedulerConfig();
+        schedulerConfig.setCarbonIntensityApi(disabledApi);
+    }
 
     @AfterEach
     public void afterEach() {
@@ -92,10 +95,9 @@ class TestFixedWindowScheduler {
                         .of(LocalDateTime.of(LocalDate.now(), LocalTime.of(4, 16)), ZoneId.of("Europe/Amsterdam")).toInstant(),
                         zone));
 
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                .withScheduledMethod(immutableScheduledMethod)
-                .build(), new SchedulerConfig(), dataFetcher, null,
-                mutableClock);
+        schedulerConfig.setClock(mutableClock);
+        scheduler = new SimpleScheduler(schedulerConfig);
+        scheduler.scheduleMethod(immutableScheduledMethod);
         mutableClock.getNotifier().register(scheduler);
 
         scheduler.start();
@@ -166,10 +168,9 @@ class TestFixedWindowScheduler {
                         .toInstant(),
                         zone));
 
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                .withScheduledMethod(immutableScheduledMethod)
-                .build(), new SchedulerConfig(), dataFetcher, null,
-                mutableClock);
+        schedulerConfig.setClock(mutableClock);
+        scheduler = new SimpleScheduler(schedulerConfig);
+        scheduler.scheduleMethod(immutableScheduledMethod);
         mutableClock.getNotifier().register(scheduler);
 
         scheduler.start();
@@ -245,10 +246,9 @@ class TestFixedWindowScheduler {
                         .toInstant(),
                         zone));
 
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                .withScheduledMethod(immutableScheduledMethod)
-                .build(), new SchedulerConfig(), dataFetcher, null,
-                mutableClock);
+        schedulerConfig.setClock(mutableClock);
+        scheduler = new SimpleScheduler(schedulerConfig);
+        scheduler.scheduleMethod(immutableScheduledMethod);
         mutableClock.getNotifier().register(scheduler);
 
         scheduler.start();
@@ -330,10 +330,9 @@ class TestFixedWindowScheduler {
                         .toInstant(),
                         zone));
 
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                .withScheduledMethod(immutableScheduledMethod)
-                .build(), new SchedulerConfig(), dataFetcher, null,
-                mutableClock);
+        schedulerConfig.setClock(mutableClock);
+        scheduler = new SimpleScheduler(schedulerConfig);
+        scheduler.scheduleMethod(immutableScheduledMethod);
         mutableClock.getNotifier().register(scheduler);
 
         scheduler.start();
@@ -420,10 +419,9 @@ class TestFixedWindowScheduler {
                         .toInstant(),
                         zone));
 
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                .withScheduledMethod(immutableScheduledMethod)
-                .build(), new SchedulerConfig(), dataFetcher, null,
-                mutableClock);
+        schedulerConfig.setClock(mutableClock);
+        scheduler = new SimpleScheduler(schedulerConfig);
+        scheduler.scheduleMethod(immutableScheduledMethod);
         mutableClock.getNotifier().register(scheduler);
 
         scheduler.start();
@@ -499,13 +497,12 @@ class TestFixedWindowScheduler {
                 Clock.fixed(ZonedDateTime
                         .of(LocalDateTime.of(LocalDate.now(), LocalTime.of(4, 16)), ZoneId.of("Europe/Amsterdam")).toInstant(),
                         zone));
+        schedulerConfig.setClock(mutableClock);
 
         try (MockedConstruction<FixedWindowPlanner> fixedWindowPlannerMockedConstruction = mockConstruction(
                 FixedWindowPlanner.class, (mock, context) -> when(mock.canSchedule(any())).thenReturn(false))) {
-            scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                    .withScheduledMethod(immutableScheduledMethod)
-                    .build(), new SchedulerConfig(), dataFetcher, null,
-                    mutableClock);
+            scheduler = new SimpleScheduler(schedulerConfig);
+            scheduler.scheduleMethod(immutableScheduledMethod);
             mutableClock.getNotifier().register(scheduler);
             scheduler.start();
 
@@ -564,13 +561,12 @@ class TestFixedWindowScheduler {
                 Clock.fixed(ZonedDateTime
                         .of(LocalDateTime.of(LocalDate.now(), LocalTime.of(4, 44)), ZoneId.of("Europe/Amsterdam")).toInstant(),
                         zone));
+        schedulerConfig.setClock(mutableClock);
 
         try (MockedConstruction<FixedWindowPlanner> fixedWindowPlannerMockedConstruction = mockConstruction(
                 FixedWindowPlanner.class, (mock, context) -> when(mock.canSchedule(any())).thenReturn(false))) {
-            scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                    .withScheduledMethod(immutableScheduledMethod)
-                    .build(), new SchedulerConfig(), dataFetcher, null,
-                    mutableClock);
+            scheduler = new SimpleScheduler(schedulerConfig);
+            scheduler.scheduleMethod(immutableScheduledMethod);
             mutableClock.getNotifier().register(scheduler);
             scheduler.start();
 
@@ -628,10 +624,9 @@ class TestFixedWindowScheduler {
                         .of(LocalDateTime.of(LocalDate.now(), LocalTime.of(8, 15, 30)), ZoneId.of("Europe/Amsterdam"))
                         .toInstant(), ZoneId.systemDefault());
 
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                .withScheduledMethod(immutableScheduledMethod)
-                .build(), new SchedulerConfig(), dataFetcher, null,
-                fixedClock);
+        schedulerConfig.setClock(fixedClock);
+        scheduler = new SimpleScheduler(schedulerConfig);
+        scheduler.scheduleMethod(immutableScheduledMethod);
 
         Assertions.assertThat(cdl.getCount()).isEqualTo(1);
         scheduler.start();
@@ -679,10 +674,9 @@ class TestFixedWindowScheduler {
                         .toInstant(),
                         ZoneId.systemDefault());
 
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                .withScheduledMethod(immutableScheduledMethod)
-                .build(), new SchedulerConfig(), dataFetcher, null,
-                fixedClock);
+        schedulerConfig.setClock(fixedClock);
+        scheduler = new SimpleScheduler(schedulerConfig);
+        scheduler.scheduleMethod(immutableScheduledMethod);
 
         Assertions.assertThat(cdl.getCount()).isEqualTo(1);
         scheduler.start();
@@ -727,10 +721,9 @@ class TestFixedWindowScheduler {
                         .of(LocalDateTime.of(LocalDate.now(), LocalTime.of(22, 16)), ZoneId.of("Europe/Amsterdam")).toInstant(),
                         zone));
 
-        scheduler = new SimpleScheduler(TestSchedulerContext.builder()
-                .withScheduledMethod(immutableScheduledMethod)
-                .build(), new SchedulerConfig(), dataFetcher, null,
-                mutableClock);
+        schedulerConfig.setClock(mutableClock);
+        scheduler = new SimpleScheduler(schedulerConfig);
+        scheduler.scheduleMethod(immutableScheduledMethod);
         mutableClock.getNotifier().register(scheduler);
         scheduler.start();
 

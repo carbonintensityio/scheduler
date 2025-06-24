@@ -1,11 +1,14 @@
 package io.carbonintensity.scheduler.runtime;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.util.Objects;
 
+import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiConfig;
 import io.carbonintensity.scheduler.GreenScheduled;
 import io.carbonintensity.scheduler.Scheduler;
+import io.carbonintensity.scheduler.spi.JobInstrumenter;
 
 /**
  * Configuration class for the scheduler, defining various settings that control its behavior.
@@ -35,6 +38,12 @@ public class SchedulerConfig {
     private boolean enabled = true;
 
     private CarbonIntensityApiConfig carbonIntensityApiConfig;
+
+    private CarbonIntensityApi carbonIntensityApi;
+
+    private JobInstrumenter jobInstrumenter;
+
+    private Clock clock = Clock.systemDefaultZone();
 
     /**
      * Scheduled task will be flagged as overdue if next execution time is exceeded by this period.
@@ -123,6 +132,30 @@ public class SchedulerConfig {
          * This can be useful to run some initialization logic that needs to be performed before the scheduler starts.
          */
         HALTED
+    }
+
+    public CarbonIntensityApi getCarbonIntensityApi() {
+        return carbonIntensityApi;
+    }
+
+    public void setCarbonIntensityApi(CarbonIntensityApi carbonIntensityApi) {
+        this.carbonIntensityApi = carbonIntensityApi;
+    }
+
+    public JobInstrumenter getJobInstrumenter() {
+        return jobInstrumenter;
+    }
+
+    public void setJobInstrumenter(JobInstrumenter jobInstrumenter) {
+        this.jobInstrumenter = jobInstrumenter;
+    }
+
+    public Clock getClock() {
+        return clock;
+    }
+
+    public void setClock(Clock clock) {
+        this.clock = clock;
     }
 
 }

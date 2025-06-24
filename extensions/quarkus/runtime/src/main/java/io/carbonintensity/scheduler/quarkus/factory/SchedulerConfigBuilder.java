@@ -2,6 +2,7 @@ package io.carbonintensity.scheduler.quarkus.factory;
 
 import java.time.Duration;
 
+import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiConfig;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.runtime.SchedulerDefaults;
@@ -25,6 +26,7 @@ public class SchedulerConfigBuilder {
     private Duration overdueGracePeriod;
     private String apiKey;
     private String apiUrl;
+    private CarbonIntensityApi carbonIntensityApi;
 
     /**
      * Constructor for pre-populating with properties
@@ -100,6 +102,11 @@ public class SchedulerConfigBuilder {
         return enabled(false);
     }
 
+    public SchedulerConfigBuilder carbonIntensityApi(CarbonIntensityApi carbonIntensityApi) {
+        this.carbonIntensityApi = carbonIntensityApi;
+        return this;
+    }
+
     public SchedulerConfig build() {
         var schedulerConfig = new SchedulerConfig();
         schedulerConfig.setEnabled(enabled);
@@ -107,11 +114,16 @@ public class SchedulerConfigBuilder {
         schedulerConfig.setOverdueGracePeriod(overdueGracePeriod);
         schedulerConfig.setShutdownGracePeriod(shutdownGracePeriod);
         schedulerConfig.setJobExecutors(jobExecutorCount);
-        schedulerConfig.setCarbonIntensityApiConfig(
-                new CarbonIntensityApiConfig.Builder()
-                        .apiKey(apiKey)
-                        .apiUrl(apiUrl)
-                        .build());
+
+        if (this.carbonIntensityApi != null) {
+            schedulerConfig.setCarbonIntensityApi(carbonIntensityApi);
+        } else {
+            schedulerConfig.setCarbonIntensityApiConfig(
+                    new CarbonIntensityApiConfig.Builder()
+                            .apiKey(apiKey)
+                            .apiUrl(apiUrl)
+                            .build());
+        }
         return schedulerConfig;
     }
 

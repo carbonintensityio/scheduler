@@ -1,8 +1,13 @@
 package io.carbonintensity.scheduler.spring.factory;
 
-import static io.carbonintensity.scheduler.spring.GreenScheduledProperties.*;
+import static io.carbonintensity.scheduler.spring.GreenScheduledProperties.DEFAULT_API_URL;
+import static io.carbonintensity.scheduler.spring.GreenScheduledProperties.DEFAULT_NUMBER_OF_JOB_EXECUTORS;
+import static io.carbonintensity.scheduler.spring.GreenScheduledProperties.DEFAULT_OVERDUE_GRACE_PERIOD;
+import static io.carbonintensity.scheduler.spring.GreenScheduledProperties.DEFAULT_SHUTDOWN_GRACE_PERIOD;
+import static io.carbonintensity.scheduler.spring.GreenScheduledProperties.DEFAULT_START_MODE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 import java.time.Duration;
 
@@ -11,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiConfig;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig;
 import io.carbonintensity.scheduler.runtime.SchedulerDefaults;
@@ -36,6 +42,7 @@ class SchedulerConfigBuilderTests {
         assertThat(schedulerConfig.getShutdownGracePeriod()).isEqualTo(DEFAULT_SHUTDOWN_GRACE_PERIOD);
         assertThat(schedulerConfig.getCarbonIntensityApiConfig()).isNotNull();
         assertThat(schedulerConfig.getCarbonIntensityApiConfig().getApiUrl()).isEqualTo(DEFAULT_API_URL);
+        assertThat(schedulerConfig.getCarbonIntensityApi()).isNull();
     }
 
     @Test
@@ -150,5 +157,16 @@ class SchedulerConfigBuilderTests {
                 .apiKey("apiKey")
                 .build();
         assertThat(schedulerConfig.getCarbonIntensityApiConfig().getApiUrl()).isEqualTo(SchedulerDefaults.DEFAULT_API_URL);
+    }
+
+    @Test
+    void testCarbonIntensityApi() {
+        var mockApi = mock(CarbonIntensityApi.class);
+        var schedulerConfig = builder
+                .carbonIntensityApi(mockApi)
+                .build();
+
+        assertThat(schedulerConfig.getCarbonIntensityApi()).isEqualTo(mockApi);
+        assertThat(schedulerConfig.getCarbonIntensityApiConfig()).isNull();
     }
 }
