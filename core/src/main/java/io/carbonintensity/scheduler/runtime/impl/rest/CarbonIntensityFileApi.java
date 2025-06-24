@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
 import io.carbonintensity.executionplanner.runtime.impl.ZonedCarbonIntensityPeriod;
-import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiException;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityJsonParser;
 
