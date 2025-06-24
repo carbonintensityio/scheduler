@@ -4,7 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.Objects;
 
-import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiConfig;
 import io.carbonintensity.scheduler.GreenScheduled;
 import io.carbonintensity.scheduler.Scheduler;
