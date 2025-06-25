@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
 import io.carbonintensity.executionplanner.runtime.impl.ZonedCarbonIntensityPeriod;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 
 /**
  * Rest client for fetching prediction data from remote end point.
@@ -98,6 +99,10 @@ public class CarbonIntensityRestApi implements CarbonIntensityApi {
                 .header("Authorization", "APIKey " + config.getApiKey())
                 .GET()
                 .build();
+    }
+
+    public String getApiName() {
+        return "CarbonIntensityIO";
     }
 
 }

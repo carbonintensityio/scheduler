@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApi;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 
 public class CarbonIntensityDataFetcherImpl implements CarbonIntensityDataFetcher {
 

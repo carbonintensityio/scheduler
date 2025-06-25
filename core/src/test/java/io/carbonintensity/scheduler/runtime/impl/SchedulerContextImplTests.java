@@ -13,8 +13,7 @@ class SchedulerContextImplTests {
     @Test
     void testConstructor() {
         var scheduledMethods = new ArrayList<ScheduledMethod>();
-        var scheduleContext = new SchedulerContextImpl(scheduledMethods, true);
-        assertThat(scheduleContext.forceSchedulerStart()).isTrue();
+        var scheduleContext = new SchedulerContextImpl(scheduledMethods);
         assertThat(scheduleContext.getScheduledMethods()).isEqualTo(scheduledMethods);
     }
 
