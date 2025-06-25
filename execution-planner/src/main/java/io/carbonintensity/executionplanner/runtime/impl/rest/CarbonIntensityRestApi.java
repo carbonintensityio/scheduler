@@ -101,4 +101,8 @@ public class CarbonIntensityRestApi implements CarbonIntensityApi {
                 .build();
     }
 
+    public String getApiName() {
+        return "CarbonIntensityIO";
+    }
+
 }

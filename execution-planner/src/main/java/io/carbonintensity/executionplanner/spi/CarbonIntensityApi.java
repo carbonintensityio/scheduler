@@ -19,4 +19,16 @@ public interface CarbonIntensityApi {
     CompletableFuture<CarbonIntensity> getCarbonIntensity(ZonedCarbonIntensityPeriod zonedPeriod);
 
     boolean isEnabled();
+
+    /**
+     * Returns the name of the API implementation.
+     * <p>
+     * By default, this returns the simple class name of the implementing class.
+     * Override this method to provide a more descriptive or user-friendly name.
+     *
+     * @return the name of the API
+     */
+    default String getApiName() {
+        return this.getClass().getSimpleName();
+    }
 }
