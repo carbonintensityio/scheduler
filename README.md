@@ -143,6 +143,21 @@ public void greenSuccessiveWindowJob() {
 ### Supported zones
 Currently only the Netherlands (NL) is supported but more zones will follow.
 
+### Custom CarbonIntensity Api
+
+If you'd like to integrate your own carbon intensity data source, you can provide a custom implementation of the `CarbonIntensityApi` interface. This is useful if you're pulling data from a private endpoint, a different region, or using a simulated source for testing.
+
+You can inject your custom implementation in one of two ways:
+
+1. As a Spring Bean or Quarkus CDI Injection
+2. Manually via `SchedulerConfig` 
+
+```java
+CarbonIntensityApi customApi = new MyCustomCarbonIntensityApi(); // your class
+SchedulerConfig schedulerConfig = new SchedulerConfig();
+schedulerConfig.setCarbonIntensityApi(customApi);
+```
+
 ## Acknowledgements
 
 The maven project structure and all documentation regarding contribution is adapted from
