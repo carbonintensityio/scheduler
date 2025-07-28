@@ -35,6 +35,8 @@ jobs:
     # Check if there are other than .md files changed, if so do run full pipeline
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    outputs:
+      code_changed: ${{ steps.changes.outputs.code_changed }}
     steps:
       - uses: actions/checkout@v4
 
@@ -45,9 +47,9 @@ jobs:
           changes=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
           echo "Changed files: $changes"
           if echo "$changes" | grep -vE '\.(md)$'; then
-            echo "::set-output name=code_changed::true"
+            echo "code_changed=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=code_changed::false"
+            echo "code_changed=false" >> $GITHUB_OUTPUT
           fi
 
   build:
