@@ -25,12 +25,11 @@ public class SchedulerProducer {
     @Produces
     @DefaultBean
     public SchedulerConfig schedulerConfig() {
-        var schedulerConfig = new SchedulerConfigBuilder(greenScheduledProperties);
+        var builder = new SchedulerConfigBuilder(greenScheduledProperties);
         if (carbonIntensityApi.isResolvable()) {
-            CarbonIntensityApi api = carbonIntensityApi.get();
-            schedulerConfig.carbonIntensityApi(api);
+            builder.carbonIntensityApi(carbonIntensityApi.get());
         }
-        return schedulerConfig.build();
+        return builder.build();
     }
 
     @Produces
