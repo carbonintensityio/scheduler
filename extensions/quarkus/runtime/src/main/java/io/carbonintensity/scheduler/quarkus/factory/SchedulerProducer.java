@@ -1,7 +1,6 @@
 package io.carbonintensity.scheduler.quarkus.factory;
 
-import java.util.Optional;
-
+import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -21,13 +20,16 @@ public class SchedulerProducer {
     GreenScheduledProperties greenScheduledProperties;
 
     @Inject
-    Optional<CarbonIntensityApi> carbonIntensityApi;
+    Instance<CarbonIntensityApi> carbonIntensityApi;
 
     @Produces
     @DefaultBean
     public SchedulerConfig schedulerConfig() {
         var schedulerConfig = new SchedulerConfigBuilder(greenScheduledProperties);
-        carbonIntensityApi.ifPresent(schedulerConfig::carbonIntensityApi);
+        if (carbonIntensityApi.isResolvable()) {
+            CarbonIntensityApi api = carbonIntensityApi.get();
+            schedulerConfig.carbonIntensityApi(api);
+        }
         return schedulerConfig.build();
     }
 

@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.carbonintensity.scheduler.GreenScheduled;
+import io.carbonintensity.scheduler.Scheduler;
 import io.carbonintensity.scheduler.Trigger;
 import io.carbonintensity.scheduler.quarkus.common.runtime.util.SchedulerUtils;
-import io.carbonintensity.scheduler.runtime.SimpleScheduler;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class QuarkusSchedulerConfigurationTest {
@@ -27,7 +27,7 @@ public class QuarkusSchedulerConfigurationTest {
                     .addAsResource("application.properties"));
 
     @Inject
-    SimpleScheduler greenScheduler;
+    Scheduler greenScheduler;
 
     @ConfigProperty(name = "scheduled.identity1")
     String identity1;
