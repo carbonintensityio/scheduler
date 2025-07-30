@@ -56,7 +56,6 @@ import io.quarkus.arc.processor.BeanDeploymentValidator;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -64,6 +63,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceDirectoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
@@ -84,6 +84,11 @@ public class SchedulerProcessor {
 
     static final String INVOKER_SUFFIX = "_ScheduledInvoker";
     static final String NESTED_SEPARATOR = "$_";
+
+    @BuildStep
+    NativeImageResourceDirectoryBuildItem nativeImageResourceBuildItem() {
+        return new NativeImageResourceDirectoryBuildItem("fallback");
+    }
 
     @BuildStep
     void beans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -297,7 +302,7 @@ public class SchedulerProcessor {
                 .supplier(recorder.createContext(scheduledMetadata))
                 .done());
 
-        return new FeatureBuildItem(Feature.SCHEDULER);
+        return new FeatureBuildItem("green-scheduler");
     }
 
     private String generateInvoker(ScheduledBusinessMethodItem scheduledMethod, ClassOutput classOutput) {
