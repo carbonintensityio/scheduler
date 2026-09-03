@@ -6,11 +6,40 @@ import java.util.Objects;
 import io.carbonintensity.scheduler.ConcurrentExecution;
 import io.carbonintensity.scheduler.GreenScheduled;
 import io.carbonintensity.scheduler.SkipPredicate;
+import io.carbonintensity.scheduler.observability.GreenObserved;
 
 public class AnnotationUtil {
 
     public static GreenScheduledBuilder newGreenScheduled() {
         return new GreenScheduledBuilder();
+    }
+
+    public static GreenObservedBuilder newGreenObserved() {
+        return new GreenObservedBuilder();
+    }
+
+    public static class GreenObservedBuilder {
+
+        private boolean carbonImpact = false;
+
+        public GreenObservedBuilder carbonImpact(boolean carbonImpact) {
+            this.carbonImpact = carbonImpact;
+            return this;
+        }
+
+        public GreenObserved build() {
+            return new GreenObserved() {
+                @Override
+                public Class<? extends Annotation> annotationType() {
+                    return GreenObserved.class;
+                }
+
+                @Override
+                public boolean carbonImpact() {
+                    return carbonImpact;
+                }
+            };
+        }
     }
 
     public static class GreenScheduledBuilder {

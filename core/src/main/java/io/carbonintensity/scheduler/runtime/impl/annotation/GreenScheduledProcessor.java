@@ -15,25 +15,34 @@ import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 
 import io.carbonintensity.scheduler.GreenScheduled;
+import io.carbonintensity.scheduler.observability.GreenObserved;
 
 /**
- * Annotation processor for {@link GreenScheduled}.
+ * Annotation processor for {@link GreenScheduled} and {@link GreenObserved}.
  * <p>
- * This processor validates the usage of the {@link GreenScheduled} annotation at compile time.
- * It ensures that annotated methods comply with the expected constraints by using
- * {@link GreenScheduledAnnotationValidation}.
+ * This processor validates the usage of both annotations at compile time. It ensures that annotated methods comply
+ * with the expected constraints by using {@link GreenScheduledAnnotationValidation}.
  * <p>
  * If validation errors are found, they are reported as compile-time errors using {@link Messager}.
  * </p>
+ * <p>
+ * Because this processor is registered as a standard {@code javax.annotation.processing.Processor} (see
+ * {@code META-INF/services}), these checks run for any project that has {@code core} on its annotation processor
+ * path - not just Quarkus, Spring, or Micronaut consumers using their own extension-specific validation.
+ * </p>
  *
  * <p>
- * This processor supports Java 17 and processes the {@code io.carbonintensity.scheduler.GreenScheduled} annotation.
+ * This processor supports Java 17.
  * </p>
  *
  * @see GreenScheduled
+ * @see GreenObserved
  * @see GreenScheduledAnnotationValidation
  */
-@SupportedAnnotationTypes("io.carbonintensity.scheduler.GreenScheduled")
+@SupportedAnnotationTypes({
+        "io.carbonintensity.scheduler.GreenScheduled",
+        "io.carbonintensity.scheduler.observability.GreenObserved"
+})
 @SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class GreenScheduledProcessor extends AbstractProcessor {
 
@@ -48,6 +57,23 @@ public class GreenScheduledProcessor extends AbstractProcessor {
 
                 List<String> validationErrors = GreenScheduledAnnotationValidation
                         .validateAndReturnValidationErrors(annotation);
+
+                for (String validationError : validationErrors) {
+                    messager.printMessage(Diagnostic.Kind.ERROR, validationError, executableElement);
+                }
+            }
+        }
+
+        for (Element element : roundEnv.getElementsAnnotatedWith(GreenObserved.class)) {
+            if (element instanceof ExecutableElement) {
+                ExecutableElement executableElement = (ExecutableElement) element;
+                // GreenScheduled is @Repeatable: getAnnotation() returns null when applied more than once,
+                // so every schedule is read via getAnnotationsByType() instead.
+                GreenScheduled[] schedules = executableElement.getAnnotationsByType(GreenScheduled.class);
+                GreenObserved greenObserved = executableElement.getAnnotation(GreenObserved.class);
+
+                List<String> validationErrors = GreenScheduledAnnotationValidation
+                        .validateGreenObserved(schedules, greenObserved);
 
                 for (String validationError : validationErrors) {
                     messager.printMessage(Diagnostic.Kind.ERROR, validationError, executableElement);
