@@ -121,6 +121,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     private final JobInstrumenter jobInstrumenter;
     private final List<EventListener> eventListeners;
     private final Events events;
+    private final CarbonImpactHistory carbonImpactHistory;
 
     public SimpleScheduler(SchedulerConfig schedulerConfig) {
         this.clock = schedulerConfig.getClock();
@@ -132,6 +133,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         this.jobInstrumenter = schedulerConfig.getJobInstrumenter();
         this.eventListeners = new ArrayList<>();
         this.slotTracker = new ConcurrencySlotTracker();
+        this.carbonImpactHistory = new CarbonImpactHistory();
 
         if (!schedulerConfig.isEnabled()) {
             log.info("Simple scheduler is disabled by config property and will not be started.");
@@ -165,7 +167,11 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                     GreenScheduledAnnotationParser.parseOverdueGracePeriod(scheduled, schedulerConfig.getOverdueGracePeriod()),
                     constraints);
             trigger.setGreenObserved(greenObserved);
-            ScheduledInvoker invoker = initInvoker(method.getInvoker(), events,
+            ScheduledInvoker rawInvoker = method.getInvoker();
+            if (trigger.isCarbonImpactEnabled()) {
+                rawInvoker = new CarbonImpactHistoryInvoker(rawInvoker, clock, id, carbonImpactHistory);
+            }
+            ScheduledInvoker invoker = initInvoker(rawInvoker, events,
                     scheduled.concurrentExecution(), initSkipPredicate(scheduled.skipExecutionIf()), jobInstrumenter);
             registerTask(trigger.id, new ScheduledTask(trigger, invoker, false));
         }
@@ -325,6 +331,10 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
 
     List<EventListener> getEventListeners() {
         return new ArrayList<>(this.eventListeners);
+    }
+
+    CarbonImpactHistory getCarbonImpactHistory() {
+        return carbonImpactHistory;
     }
 
     void checkTriggers() {
