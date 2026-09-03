@@ -9,7 +9,7 @@ A method-level annotation identifying a scheduled job whose execution moment is 
 _Avoid_: Green job, carbon-scheduled method
 
 **GreenObserved**:
-A method-level annotation, valid only alongside `GreenScheduled` on the same method, that opts a job into observability data: primarily fire-time/status transparency (last/next fire time, "is this a black box"), secondarily carbon-impact/savings metrics. Absence means no data is collected for that job.
+A method-level annotation, valid only alongside `GreenScheduled` on the same method, that opts a job into observability metrics export (Micrometer, per extension): primarily fire-time/status transparency (last/next fire time, "is this a black box"), secondarily carbon-impact/savings metrics. Does not change what core tracks internally - only whether an extension exports it as metrics. Absence means no metrics are exported for that job.
 _Avoid_: ScheduleInsights, Metrics annotation, carbon annotation, Observed (collides with Micrometer's own `@Observed`)
 
 **CarbonImpactBatchTrigger**:

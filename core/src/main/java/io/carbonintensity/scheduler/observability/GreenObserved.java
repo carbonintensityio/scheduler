@@ -9,17 +9,23 @@ import java.lang.annotation.Target;
 import io.carbonintensity.scheduler.GreenScheduled;
 
 /**
- * Opts a {@link GreenScheduled} method into observability data: fire-time/status transparency (last/next fire
- * time, execution outcome and duration, scheduling drift, ...) is always collected once this annotation is present.
+ * Opts a {@link GreenScheduled} method into observability metrics export (Micrometer, per extension): fire-time/
+ * status metrics (last/next fire time, execution outcome and duration, scheduling drift, ...) are always exported
+ * once this annotation is present.
+ * <p>
+ * This does not change what {@code core} itself tracks - {@link io.carbonintensity.scheduler.Trigger} already
+ * exposes fire-time data for every {@link GreenScheduled} job regardless of this annotation. What
+ * {@code @GreenObserved} controls is whether an extension (Quarkus, Spring, Micronaut) exports that data - and the
+ * carbon-impact figures below - as metrics at all.
  * <p>
  * A method annotated with {@code @GreenObserved} must also be annotated with {@link GreenScheduled}. Absence of
- * this annotation means no observability data is collected for the job.
+ * this annotation means no metrics are exported for the job.
  *
  * <pre>
  * &#64;GreenScheduled(fixedWindow = "9:30 11:45", duration = "15m", carbonIntensityZone = "NL")
  * &#64;GreenObserved
  * void check() {
- *     // fire-time/status data is now collected for this job.
+ *     // fire-time/status metrics are now exported for this job.
  * }
  * </pre>
  *

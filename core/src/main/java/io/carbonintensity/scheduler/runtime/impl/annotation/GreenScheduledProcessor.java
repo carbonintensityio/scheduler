@@ -53,13 +53,11 @@ public class GreenScheduledProcessor extends AbstractProcessor {
         for (Element element : roundEnv.getElementsAnnotatedWith(GreenScheduled.class)) {
             if (element instanceof ExecutableElement) {
                 ExecutableElement executableElement = (ExecutableElement) element;
-                GreenScheduled annotation = executableElement.getAnnotation(GreenScheduled.class);
-
-                List<String> validationErrors = GreenScheduledAnnotationValidation
-                        .validateAndReturnValidationErrors(annotation);
-
-                for (String validationError : validationErrors) {
-                    messager.printMessage(Diagnostic.Kind.ERROR, validationError, executableElement);
+                // GreenScheduled is @Repeatable: getAnnotation() returns null when applied more than once,
+                // so every schedule is read via getAnnotationsByType() instead, and validated individually.
+                for (GreenScheduled schedule : executableElement.getAnnotationsByType(GreenScheduled.class)) {
+                    report(messager, executableElement,
+                            GreenScheduledAnnotationValidation.validateAndReturnValidationErrors(schedule));
                 }
             }
         }
@@ -67,19 +65,19 @@ public class GreenScheduledProcessor extends AbstractProcessor {
         for (Element element : roundEnv.getElementsAnnotatedWith(GreenObserved.class)) {
             if (element instanceof ExecutableElement) {
                 ExecutableElement executableElement = (ExecutableElement) element;
-                // GreenScheduled is @Repeatable: getAnnotation() returns null when applied more than once,
-                // so every schedule is read via getAnnotationsByType() instead.
                 GreenScheduled[] schedules = executableElement.getAnnotationsByType(GreenScheduled.class);
                 GreenObserved greenObserved = executableElement.getAnnotation(GreenObserved.class);
 
-                List<String> validationErrors = GreenScheduledAnnotationValidation
-                        .validateGreenObserved(schedules, greenObserved);
-
-                for (String validationError : validationErrors) {
-                    messager.printMessage(Diagnostic.Kind.ERROR, validationError, executableElement);
-                }
+                report(messager, executableElement,
+                        GreenScheduledAnnotationValidation.validateGreenObserved(schedules, greenObserved));
             }
         }
         return true;
+    }
+
+    private static void report(Messager messager, ExecutableElement element, List<String> validationErrors) {
+        for (String validationError : validationErrors) {
+            messager.printMessage(Diagnostic.Kind.ERROR, validationError, element);
+        }
     }
 }
