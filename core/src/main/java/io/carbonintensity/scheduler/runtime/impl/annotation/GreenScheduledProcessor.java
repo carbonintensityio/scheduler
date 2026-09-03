@@ -27,14 +27,14 @@ import io.carbonintensity.scheduler.GreenScheduled;
  * </p>
  *
  * <p>
- * This processor supports Java 11 and processes the {@code io.carbonintensity.scheduler.GreenScheduled} annotation.
+ * This processor supports Java 17 and processes the {@code io.carbonintensity.scheduler.GreenScheduled} annotation.
  * </p>
  *
  * @see GreenScheduled
  * @see GreenScheduledAnnotationValidation
  */
 @SupportedAnnotationTypes("io.carbonintensity.scheduler.GreenScheduled")
-@SupportedSourceVersion(SourceVersion.RELEASE_11)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class GreenScheduledProcessor extends AbstractProcessor {
 
     @Override
