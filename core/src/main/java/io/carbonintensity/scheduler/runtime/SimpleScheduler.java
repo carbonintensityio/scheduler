@@ -50,6 +50,8 @@ import io.carbonintensity.scheduler.ScheduledExecution;
 import io.carbonintensity.scheduler.Scheduler;
 import io.carbonintensity.scheduler.SkipPredicate;
 import io.carbonintensity.scheduler.Trigger;
+import io.carbonintensity.scheduler.observability.CarbonImpactResult;
+import io.carbonintensity.scheduler.observability.GreenObserved;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig.StartMode;
 import io.carbonintensity.scheduler.runtime.impl.annotation.GreenScheduledAnnotationParser;
 import io.carbonintensity.scheduler.runtime.impl.rest.CarbonIntensityFileApi;
@@ -151,6 +153,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
 
     public void scheduleMethod(ScheduledMethod method) {
         int nameSequence = 0;
+        GreenObserved greenObserved = method.getGreenObserved().orElse(null);
         for (GreenScheduled scheduled : method.getSchedules()) {
             nameSequence++;
             String id = scheduled.identity();
@@ -161,6 +164,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
             SimpleTrigger trigger = createTrigger(id, method.getMethodDescription(),
                     GreenScheduledAnnotationParser.parseOverdueGracePeriod(scheduled, schedulerConfig.getOverdueGracePeriod()),
                     constraints);
+            trigger.setGreenObserved(greenObserved);
             ScheduledInvoker invoker = initInvoker(method.getInvoker(), events,
                     scheduled.concurrentExecution(), initSkipPredicate(scheduled.skipExecutionIf()), jobInstrumenter);
             registerTask(trigger.id, new ScheduledTask(trigger, invoker, false));
@@ -630,6 +634,8 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         private volatile boolean running;
         protected final ZonedDateTime start;
         protected volatile ZonedDateTime lastFireTime;
+        private volatile GreenObserved greenObserved;
+        private volatile CarbonImpactResult lastCarbonImpact;
 
         SimpleTrigger(String id, Clock clock, ZonedDateTime start, String description) {
             this.id = id;
@@ -666,6 +672,24 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         @Override
         public String getMethodDescription() {
             return methodDescription;
+        }
+
+        void setGreenObserved(GreenObserved greenObserved) {
+            this.greenObserved = greenObserved;
+        }
+
+        boolean isCarbonImpactEnabled() {
+            GreenObserved observed = greenObserved;
+            return observed != null && observed.carbonImpact();
+        }
+
+        void setLastCarbonImpact(CarbonImpactResult result) {
+            this.lastCarbonImpact = result;
+        }
+
+        @Override
+        public Optional<CarbonImpactResult> getLastCarbonImpact() {
+            return Optional.ofNullable(lastCarbonImpact);
         }
     }
 
