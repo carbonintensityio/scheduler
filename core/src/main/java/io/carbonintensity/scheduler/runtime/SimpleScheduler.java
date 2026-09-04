@@ -617,6 +617,24 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
             // fallback to interval trigger
             return super.isOverdue();
         }
+
+        /**
+         * The nearest occurrence a plain, carbon-unaware interval trigger (firing every
+         * {@link #calculateFallbackInterval}, starting from {@code start}) would have had to
+         * {@code actualFireTime} - the moment this job would have fired had it just run "as soon as allowed" every
+         * time, instead of waiting for a greener moment. A pure function of {@code start} and the configured gaps:
+         * unlike the real, carbon-aware fire times, it never depends on what this job actually did before.
+         */
+        @Override
+        ZonedDateTime naiveBaselineFireTime(ZonedDateTime actualFireTime) {
+            long avgIntervalMillis = calculateFallbackInterval(constraints);
+            if (avgIntervalMillis <= 0) {
+                return actualFireTime;
+            }
+            long elapsedMillis = Duration.between(start, actualFireTime).toMillis();
+            long occurrenceIndex = Math.round((double) elapsedMillis / avgIntervalMillis);
+            return start.plus(Duration.ofMillis(occurrenceIndex * avgIntervalMillis));
+        }
     }
 
     /**
@@ -700,6 +718,22 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         @Override
         public Optional<CarbonImpactResult> getLastCarbonImpact() {
             return Optional.ofNullable(lastCarbonImpact);
+        }
+
+        /**
+         * The fire time this job would have had if carbon-awareness had been switched off entirely - the baseline
+         * savings are compared against, see {@code CarbonImpactBatchTrigger}. A pure function of the schedule's own
+         * configuration and {@code actualFireTime}: it never depends on execution history, so it stays correct no
+         * matter when, how often, or in what order it's (re)computed.
+         *
+         * @param actualFireTime one of this trigger's real, carbon-aware fire times
+         * @return the corresponding naive/non-green fire time
+         * @throws UnsupportedOperationException if this trigger type has no defined naive baseline
+         */
+        ZonedDateTime naiveBaselineFireTime(ZonedDateTime actualFireTime) {
+            throw new UnsupportedOperationException(
+                    "No naive baseline defined for " + getClass().getSimpleName()
+                            + " - carbonImpact should not be enabled for this schedule type");
         }
     }
 
@@ -844,6 +878,22 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         @Override
         public boolean isOverdue() {
             return false;
+        }
+
+        /**
+         * The fallback cron's occurrence on {@code actualFireTime}'s own calendar day - the moment this job would
+         * have fired had no green window ever been found. The fallback cron is daily (see
+         * {@link GreenScheduledAnnotationParser#parseCronExpression}), so it has exactly one occurrence per day the
+         * window itself is active on.
+         */
+        @Override
+        ZonedDateTime naiveBaselineFireTime(ZonedDateTime actualFireTime) {
+            ExecutionTime fallbackExecutionTime = ExecutionTime.forCron(constraints.getFallbackCronExpression());
+            ZonedDateTime justBeforeStartOfDay = actualFireTime.toLocalDate().atStartOfDay(actualFireTime.getZone())
+                    .minusSeconds(1);
+            return fallbackExecutionTime.nextExecution(justBeforeStartOfDay)
+                    .orElseThrow(() -> new IllegalStateException(
+                            "No fallback cron occurrence found on " + actualFireTime.toLocalDate() + " for " + id));
         }
     }
 
