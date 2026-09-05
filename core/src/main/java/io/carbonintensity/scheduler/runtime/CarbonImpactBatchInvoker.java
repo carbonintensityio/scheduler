@@ -37,11 +37,13 @@ import io.carbonintensity.scheduler.observability.CarbonImpactResult;
  * intensity data is never trustworthy same-day.</li>
  * <li>a day older than the configured backlog window is abandoned (its windows are dropped, never retried) and
  * logged as a warning - the cumulative savings total is a lower bound, not a reconciled ledger.</li>
- * <li>every other day is processed: fetch that zone/day's actual intensity (once per zone/day, shared across every
- * job in the same zone via {@code intensityCache}, with retry-with-backoff on failure), compute each window's
- * actual impact and its naive-baseline impact via {@link SimpleScheduler.SimpleTrigger#naiveBaselineFireTime}, sum
- * them into one {@link CarbonImpactResult}, publish it, and only then remove those windows from history - so a
- * failure leaves them in place to retry on a later run instead of silently losing them.</li>
+ * <li>every other day is processed: fetch that zone/day's actual intensity, plus - per window - whatever zone/day
+ * its own naive baseline (via {@link SimpleScheduler.SimpleTrigger#naiveBaselineFireTime}) falls on, since a
+ * baseline can land on a different calendar day (and, for {@code FixedWindowTrigger}, a different zone) than the
+ * actual execution. Every distinct (zone, day, dayZone) needed is fetched at most once, shared across every job in
+ * the same zone via {@code intensityCache}, with retry-with-backoff on failure. Each window's actual and baseline
+ * impact are summed into one {@link CarbonImpactResult}, published, and only then are those windows removed from
+ * history - so a failure leaves them in place to retry on a later run instead of silently losing them.</li>
  * </ul>
  */
 final class CarbonImpactBatchInvoker implements ScheduledInvoker {
@@ -125,45 +127,79 @@ final class CarbonImpactBatchInvoker implements ScheduledInvoker {
     private CompletableFuture<Void> processDay(SimpleScheduler.SimpleTrigger trigger, String identity, ZoneId zoneId,
             LocalDate day, List<ExecutionWindow> windows, Map<String, CompletableFuture<CarbonIntensity>> intensityCache) {
         String zone = trigger.getCarbonIntensityZone();
-        String cacheKey = zone + "|" + day;
-        CompletableFuture<CarbonIntensity> intensityFuture = intensityCache.computeIfAbsent(cacheKey,
-                key -> fetchWithRetry(zone, zoneId, day, 0));
 
-        return intensityFuture.handle((intensity, failure) -> {
-            if (failure != null) {
-                log.warn("Failed to fetch actual carbon intensity for zone '{}' on {} after retries - job '{}' will "
-                        + "be retried on a later run: {}", zone, day, identity, failure.toString());
-                return null;
-            }
-            try {
-                CarbonImpactResult result = computeResult(trigger, day, windows, intensity);
-                trigger.setLastCarbonImpact(result);
-                events.fireJobCarbonImpactCalculated(trigger, result);
-                history.remove(identity, windows);
-            } catch (RuntimeException e) {
-                log.warn("Failed to compute carbon-impact for job '{}' on {} - will be retried on a later run", identity,
-                        day, e);
-            }
-            return null;
-        }).thenApply(ignored -> (Void) null);
+        // Each window's naive baseline may land on a different calendar day - and, for FixedWindowTrigger, a
+        // different zone - than the actual execution: the baseline is computed in the job's own configured
+        // timeZone(), which need not match zoneId (the scheduler's own clock zone), and even a same-zone trigger can
+        // round to a baseline just across a midnight boundary. Every distinct (zone, day, dayZone) actually needed
+        // is fetched, not just `day` itself.
+        Map<ExecutionWindow, ZonedDateTime> baselineFireTimes = new HashMap<>();
+        Map<String, CompletableFuture<CarbonIntensity>> neededFetches = new HashMap<>();
+        String actualKey = fetchCached(intensityCache, neededFetches, zone, zoneId, day);
+        for (ExecutionWindow window : windows) {
+            ZonedDateTime baselineFireTime = trigger.naiveBaselineFireTime(window.start().atZone(ZoneId.of("UTC")));
+            baselineFireTimes.put(window, baselineFireTime);
+            fetchCached(intensityCache, neededFetches, zone, baselineFireTime.getZone(), baselineFireTime.toLocalDate());
+        }
+
+        return CompletableFuture.allOf(neededFetches.values().toArray(CompletableFuture[]::new))
+                .handle((ignored, failure) -> {
+                    if (failure != null) {
+                        log.warn("Failed to fetch actual carbon intensity for job '{}' on {} after retries - will be "
+                                + "retried on a later run: {}", identity, day, failure.toString());
+                        return null;
+                    }
+                    try {
+                        CarbonImpactResult result = computeResult(trigger, day, windows, baselineFireTimes, zone,
+                                actualKey, neededFetches);
+                        trigger.setLastCarbonImpact(result);
+                        events.fireJobCarbonImpactCalculated(trigger, result);
+                        history.remove(identity, windows);
+                    } catch (RuntimeException e) {
+                        log.warn("Failed to compute carbon-impact for job '{}' on {} - will be retried on a later run",
+                                identity, day, e);
+                    }
+                    return null;
+                }).thenApply(ignored -> (Void) null);
+    }
+
+    /**
+     * Registers a fetch for {@code (zone, day, dayZone)} in both {@code neededFetches} (this {@link #processDay}
+     * call) and {@code intensityCache} (the whole {@link #invoke} run - so it's still shared across every job/day
+     * sharing the same zone/day/zone triple), reusing either's existing future instead of fetching twice.
+     *
+     * @return the cache key the fetch was registered under
+     */
+    private String fetchCached(Map<String, CompletableFuture<CarbonIntensity>> intensityCache,
+            Map<String, CompletableFuture<CarbonIntensity>> neededFetches, String zone, ZoneId dayZone, LocalDate day) {
+        String key = cacheKeyFor(zone, day, dayZone);
+        neededFetches.put(key, intensityCache.computeIfAbsent(key, k -> fetchWithRetry(zone, dayZone, day, 0)));
+        return key;
+    }
+
+    private static String cacheKeyFor(String zone, LocalDate day, ZoneId dayZone) {
+        return zone + "|" + day + "|" + dayZone.getId();
     }
 
     private CarbonImpactResult computeResult(SimpleScheduler.SimpleTrigger trigger, LocalDate day,
-            List<ExecutionWindow> windows, CarbonIntensity actualIntensity) {
+            List<ExecutionWindow> windows, Map<ExecutionWindow, ZonedDateTime> baselineFireTimes, String zone,
+            String actualKey, Map<String, CompletableFuture<CarbonIntensity>> fetches) {
         BigDecimal totalActualImpact = BigDecimal.ZERO;
         BigDecimal totalBaselineImpact = BigDecimal.ZERO;
+        CarbonIntensity actualIntensity = fetches.get(actualKey).join();
 
         for (ExecutionWindow window : windows) {
             totalActualImpact = totalActualImpact
                     .add(CarbonImpactCalculator.weightedImpact(actualIntensity, window.start(), window.end()));
 
-            ZonedDateTime actualFireTime = window.start().atZone(ZoneId.of("UTC"));
-            ZonedDateTime baselineFireTime = trigger.naiveBaselineFireTime(actualFireTime);
+            ZonedDateTime baselineFireTime = baselineFireTimes.get(window);
             Duration windowDuration = Duration.between(window.start(), window.end());
             Instant baselineStart = baselineFireTime.toInstant();
             Instant baselineEnd = baselineStart.plus(windowDuration);
+            String baselineKey = cacheKeyFor(zone, baselineFireTime.toLocalDate(), baselineFireTime.getZone());
+            CarbonIntensity baselineIntensity = fetches.get(baselineKey).join();
             totalBaselineImpact = totalBaselineImpact
-                    .add(CarbonImpactCalculator.weightedImpact(actualIntensity, baselineStart, baselineEnd));
+                    .add(CarbonImpactCalculator.weightedImpact(baselineIntensity, baselineStart, baselineEnd));
         }
 
         BigDecimal savings = totalBaselineImpact.subtract(totalActualImpact);

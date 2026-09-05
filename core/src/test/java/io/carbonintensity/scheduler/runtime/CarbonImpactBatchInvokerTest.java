@@ -211,6 +211,45 @@ class CarbonImpactBatchInvokerTest {
         assertThat(result.savingsGrams()).isGreaterThan(0); // baseline (0.5h * 500 = 250) is far more expensive
     }
 
+    @Test
+    void baselineOnADifferentDayIsFetchedSeparatelyFromTheActualDay() throws Exception {
+        LocalDate actualDay = LocalDate.of(2026, 9, 4);
+        LocalDate baselineDay = LocalDate.of(2026, 9, 5);
+        api.respondWith(ZONE, actualDay, flatIntensity(actualDay, 10)); // cheap
+        api.respondWith(ZONE, baselineDay, flatIntensity(baselineDay, 500)); // expensive, clearly distinguishable
+
+        // fixedWindow job in Asia/Tokyo (UTC+9), with an explicit fallback cron at 10:00 (its own zone) - so its
+        // naive baseline is computed in Asia/Tokyo, independently of the scheduler's own UTC clock zone.
+        GreenScheduled greenScheduled = AnnotationUtil.newGreenScheduled()
+                .identity("job-a")
+                .fixedWindow("01:00 03:00")
+                .duration("30m")
+                .cron("0 0 10 * * ?")
+                .carbonIntensityZone(ZONE)
+                .timeZone("Asia/Tokyo")
+                .build();
+        GreenObserved greenObserved = AnnotationUtil.newGreenObserved().carbonImpact(true).build();
+        scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", "job-a", List.of(greenScheduled),
+                greenObserved));
+
+        // 23:30 UTC on the 4th is bucketed (by the scheduler's own UTC clock zone) as belonging to actualDay, but
+        // that same instant is 08:30 on the 5th in Asia/Tokyo - so the fallback cron's 10:00 occurrence in that zone
+        // (the naive baseline) falls a full calendar day later, on baselineDay.
+        Instant actualStart = actualDay.atStartOfDay(UTC).plusHours(23).plusMinutes(30).toInstant();
+        scheduler.getCarbonImpactHistory().record("job-a", actualStart, actualStart.plusSeconds(1800));
+
+        newInvoker().invoke(fakeExecution()).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertThat(publishedResults).hasSize(1);
+        assertThat(api.requestCount(ZONE, actualDay)).isEqualTo(1);
+        assertThat(api.requestCount(ZONE, baselineDay)).isEqualTo(1); // fetched separately, not reused from actualDay
+        CarbonImpactResult result = publishedResults.get(0);
+        assertThat(result.impactGrams()).isEqualTo(5.0); // 0.5h * 10
+        // Before the day/zone-mismatch fix, the baseline window would have silently fallen outside actualDay's
+        // fetched data and scored 0, making this negative (0 - 5). Fetched correctly, it's clearly positive.
+        assertThat(result.savingsGrams()).isEqualTo(245.0); // 0.5h * 500 (baseline) - 0.5h * 10 (actual)
+    }
+
     private SimpleScheduler.SimpleTrigger registerCarbonImpactJob(String identity, boolean carbonImpact) {
         GreenScheduled greenScheduled = AnnotationUtil.newGreenScheduled()
                 .identity(identity)
