@@ -10,21 +10,16 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
-import io.carbonintensity.executionplanner.runtime.impl.ZonedCarbonIntensityPeriod;
-import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.scheduler.GreenScheduled;
 import io.carbonintensity.scheduler.ScheduledExecution;
 import io.carbonintensity.scheduler.Scheduler;
@@ -306,57 +301,5 @@ class CarbonImpactBatchInvokerTest {
                 return Instant.now();
             }
         };
-    }
-
-    /**
-     * A controllable {@link CarbonIntensityApi}: pre-programmed per zone/day responses, an injectable number of
-     * simulated failures before succeeding, and a count of requests actually made per zone/day (to verify the
-     * per-zone/day sharing across jobs).
-     */
-    private static final class FakeCarbonIntensityApi implements CarbonIntensityApi {
-
-        private final Map<String, CarbonIntensity> responses = new ConcurrentHashMap<>();
-        private final Map<String, AtomicInteger> failuresRemaining = new ConcurrentHashMap<>();
-        private final Map<String, AtomicInteger> requestCounts = new ConcurrentHashMap<>();
-
-        void respondWith(String zone, LocalDate date, CarbonIntensity intensity) {
-            responses.put(key(zone, date), intensity);
-        }
-
-        void failNextNTimes(String zone, LocalDate date, int n) {
-            failuresRemaining.put(key(zone, date), new AtomicInteger(n));
-        }
-
-        int requestCount(String zone, LocalDate date) {
-            AtomicInteger count = requestCounts.get(key(zone, date));
-            return count == null ? 0 : count.get();
-        }
-
-        @Override
-        public java.util.concurrent.CompletableFuture<CarbonIntensity> getCarbonIntensity(ZonedCarbonIntensityPeriod period) {
-            LocalDate date = period.getStartTime().toLocalDate();
-            String key = key(period.getZone(), date);
-            requestCounts.computeIfAbsent(key, k -> new AtomicInteger()).incrementAndGet();
-
-            AtomicInteger remaining = failuresRemaining.get(key);
-            if (remaining != null && remaining.getAndUpdate(v -> Math.max(0, v - 1)) > 0) {
-                return java.util.concurrent.CompletableFuture.failedFuture(new RuntimeException("simulated failure"));
-            }
-            CarbonIntensity response = responses.get(key);
-            if (response == null) {
-                return java.util.concurrent.CompletableFuture
-                        .failedFuture(new IllegalStateException("no fake response configured for " + key));
-            }
-            return java.util.concurrent.CompletableFuture.completedFuture(response);
-        }
-
-        @Override
-        public boolean isEnabled() {
-            return true;
-        }
-
-        private static String key(String zone, LocalDate date) {
-            return zone + "|" + date;
-        }
     }
 }
