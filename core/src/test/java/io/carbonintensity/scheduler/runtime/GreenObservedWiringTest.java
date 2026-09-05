@@ -112,6 +112,77 @@ class GreenObservedWiringTest {
         assertThat(trigger.getLastCarbonImpact()).contains(result);
     }
 
+    @Test
+    void triggerShouldExposeTheCarbonIntensityZoneFromTheCoLocatedGreenScheduled() {
+        GreenScheduled greenScheduled = AnnotationUtil.newGreenScheduled()
+                .identity("test")
+                .successive("0h 1h 2h")
+                .duration("30m")
+                .carbonIntensityZone("BE")
+                .build();
+
+        scheduler = newScheduler();
+        scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", "test", List.of(greenScheduled)));
+
+        SimpleScheduler.SimpleTrigger trigger = (SimpleScheduler.SimpleTrigger) scheduler.getScheduledJob("test");
+
+        assertThat(trigger.getCarbonIntensityZone()).isEqualTo("BE");
+    }
+
+    @Test
+    void schedulingACarbonImpactEnabledJobRegistersTheBatchTrigger() {
+        GreenScheduled greenScheduled = AnnotationUtil.newGreenScheduled()
+                .identity("test")
+                .successive("0h 1h 2h")
+                .duration("30m")
+                .carbonIntensityZone("NL")
+                .build();
+        GreenObserved greenObserved = AnnotationUtil.newGreenObserved().carbonImpact(true).build();
+
+        scheduler = newScheduler();
+        assertThat(scheduler.getScheduledJob(CarbonImpactBatchTrigger.IDENTITY)).isNull();
+
+        scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", "test",
+                List.of(greenScheduled), greenObserved));
+
+        assertThat(scheduler.getScheduledJob(CarbonImpactBatchTrigger.IDENTITY)).isNotNull();
+    }
+
+    @Test
+    void schedulingAJobWithoutCarbonImpactDoesNotRegisterTheBatchTrigger() {
+        GreenScheduled greenScheduled = AnnotationUtil.newGreenScheduled()
+                .identity("test")
+                .successive("0h 1h 2h")
+                .duration("30m")
+                .carbonIntensityZone("NL")
+                .build();
+
+        scheduler = newScheduler();
+        scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", "test", List.of(greenScheduled)));
+
+        assertThat(scheduler.getScheduledJob(CarbonImpactBatchTrigger.IDENTITY)).isNull();
+    }
+
+    @Test
+    void schedulingASecondCarbonImpactEnabledJobDoesNotRegisterTheBatchTriggerTwice() {
+        GreenObserved greenObserved = AnnotationUtil.newGreenObserved().carbonImpact(true).build();
+
+        scheduler = newScheduler();
+        scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", "first",
+                List.of(AnnotationUtil.newGreenScheduled().identity("first").successive("0h 1h 2h").duration("30m")
+                        .carbonIntensityZone("NL").build()),
+                greenObserved));
+        Trigger firstBatchTrigger = scheduler.getScheduledJob(CarbonImpactBatchTrigger.IDENTITY);
+
+        scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", "second",
+                List.of(AnnotationUtil.newGreenScheduled().identity("second").successive("0h 1h 2h").duration("30m")
+                        .carbonIntensityZone("NL").build()),
+                greenObserved));
+        Trigger secondBatchTrigger = scheduler.getScheduledJob(CarbonImpactBatchTrigger.IDENTITY);
+
+        assertThat(secondBatchTrigger).isSameAs(firstBatchTrigger);
+    }
+
     private SimpleScheduler newScheduler() {
         SchedulerConfig config = new SchedulerConfig();
         config.setCarbonIntensityApi(new DisabledDummyCarbonIntensityApi());

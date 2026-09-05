@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.chrono.ChronoZonedDateTime;
@@ -41,6 +42,7 @@ import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetch
 import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetcherImpl;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiType;
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityRestApi;
+import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.executionplanner.spi.CarbonIntensityPlanner;
 import io.carbonintensity.executionplanner.spi.ConcurrencySlotTracker;
 import io.carbonintensity.executionplanner.spi.PlanningConstraints;
@@ -109,6 +111,8 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     public static final long CHECK_PERIOD = 1000L;
 
     private CarbonIntensityDataFetcher dataFetcher;
+    private CarbonIntensityApi actualCarbonIntensityApi;
+    private volatile ScheduledExecutorService carbonImpactRetryExecutor;
     private final Clock clock;
     private ScheduledExecutorService scheduledExecutor;
     private ScheduledFuture<?> scheduledFuture;
@@ -147,6 +151,11 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
 
         this.dataFetcher = new CarbonIntensityDataFetcherImpl(carbonIntensityApi, new CarbonIntensityFileApi());
 
+        // Same override hook as the predicted-side API above (mainly so tests can inject a fake for both), but a
+        // separate instance/type in production: the carbon-impact batch needs actual, not predicted, data.
+        this.actualCarbonIntensityApi = Objects.requireNonNullElse(schedulerConfig.getCarbonIntensityApi(),
+                new CarbonIntensityRestApi(schedulerConfig.getCarbonIntensityApiConfig(), CarbonIntensityApiType.ACTUAL));
+
         if (StartMode.FORCED == schedulerConfig.getStartMode()) {
             log.info("Simple scheduler will be started, force scheduler start is enabled.");
             start();
@@ -167,9 +176,11 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                     GreenScheduledAnnotationParser.parseOverdueGracePeriod(scheduled, schedulerConfig.getOverdueGracePeriod()),
                     constraints);
             trigger.setGreenObserved(greenObserved);
+            trigger.setCarbonIntensityZone(scheduled.carbonIntensityZone());
             ScheduledInvoker rawInvoker = method.getInvoker();
             if (trigger.isCarbonImpactEnabled()) {
                 rawInvoker = new CarbonImpactHistoryInvoker(rawInvoker, clock, id, carbonImpactHistory);
+                ensureCarbonImpactBatchRegistered();
             }
             ScheduledInvoker invoker = initInvoker(rawInvoker, events,
                     scheduled.concurrentExecution(), initSkipPredicate(scheduled.skipExecutionIf()), jobInstrumenter);
@@ -312,6 +323,14 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
             }
         } catch (Exception e) {
             log.warn("Unable to shutdown the job executor", e);
+        }
+        try {
+            if (carbonImpactRetryExecutor != null) {
+                carbonImpactRetryExecutor.shutdownNow();
+                carbonImpactRetryExecutor = null;
+            }
+        } catch (Exception e) {
+            log.warn("Unable to shutdown the carbon-impact retry executor", e);
         }
         log.info("Simple scheduler shutdown.");
         running = false;
@@ -460,6 +479,42 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     ScheduledTask registerTask(String id, ScheduledTask scheduledTask) {
         start();
         return scheduledTasks.putIfAbsent(id, scheduledTask);
+    }
+
+    /**
+     * Registers the once-daily carbon-impact batch the first time a {@code carbonImpact}-enabled job is scheduled.
+     * A harmless, wasted {@link CarbonImpactBatchTrigger} may be constructed if this races with another thread also
+     * scheduling a carbonImpact-enabled job for the first time - {@link #registerTask} only lets one of them win -
+     * scheduling happens at application startup, not on a hot path, so this is not worth extra synchronization.
+     */
+    private void ensureCarbonImpactBatchRegistered() {
+        if (scheduledTasks.containsKey(CarbonImpactBatchTrigger.IDENTITY)) {
+            return;
+        }
+        LocalTime windowStart = schedulerConfig.getCarbonImpactBatchWindowStart();
+        LocalTime windowEnd = schedulerConfig.getCarbonImpactBatchWindowEnd();
+        Duration jitter = CarbonImpactBatchTrigger.randomJitter(windowStart, windowEnd);
+        CarbonImpactBatchTrigger batchTrigger = new CarbonImpactBatchTrigger(clock, windowStart, windowEnd, jitter);
+        this.carbonImpactRetryExecutor = new ScheduledThreadPoolExecutor(1,
+                r -> new Thread(r, "green-scheduler-carbon-impact-retry"));
+        CarbonImpactBatchInvoker batchInvoker = new CarbonImpactBatchInvoker(this, carbonImpactHistory, events, clock,
+                actualCarbonIntensityApi, schedulerConfig.getCarbonImpactRetryBackoffs(),
+                schedulerConfig.getCarbonImpactBacklogWindowDays(), carbonImpactRetryExecutor);
+        registerTask(batchTrigger.id, new ScheduledTask(batchTrigger, batchInvoker, true));
+    }
+
+    /**
+     * @return the currently registered {@link SimpleTrigger}s whose {@link GreenObserved#carbonImpact()} is
+     *         enabled, for the carbon-impact batch to process
+     */
+    List<SimpleTrigger> getCarbonImpactEnabledTriggers() {
+        List<SimpleTrigger> result = new ArrayList<>();
+        for (ScheduledTask task : scheduledTasks.values()) {
+            if (task.trigger.isCarbonImpactEnabled()) {
+                result.add(task.trigger);
+            }
+        }
+        return result;
     }
 
     public static ScheduledInvoker initInvoker(ScheduledInvoker invoker, Events events, ConcurrentExecution concurrentExecution,
@@ -664,6 +719,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         protected volatile ZonedDateTime lastFireTime;
         private volatile GreenObserved greenObserved;
         private volatile CarbonImpactResult lastCarbonImpact;
+        private volatile String carbonIntensityZone;
 
         SimpleTrigger(String id, Clock clock, ZonedDateTime start, String description) {
             this.id = id;
@@ -709,6 +765,14 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         boolean isCarbonImpactEnabled() {
             GreenObserved observed = greenObserved;
             return observed != null && observed.carbonImpact();
+        }
+
+        void setCarbonIntensityZone(String carbonIntensityZone) {
+            this.carbonIntensityZone = carbonIntensityZone;
+        }
+
+        String getCarbonIntensityZone() {
+            return carbonIntensityZone;
         }
 
         void setLastCarbonImpact(CarbonImpactResult result) {
@@ -885,15 +949,20 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
          * have fired had no green window ever been found. The fallback cron is daily (see
          * {@link GreenScheduledAnnotationParser#parseCronExpression}), so it has exactly one occurrence per day the
          * window itself is active on.
+         * <p>
+         * {@code actualFireTime} is re-zoned into this job's own configured zone first: which calendar day an
+         * instant falls on is zone-dependent, and the caller (the carbon-impact batch, processing recorded
+         * {@code Instant}s) has no reason to know or match this job's specific zone.
          */
         @Override
         ZonedDateTime naiveBaselineFireTime(ZonedDateTime actualFireTime) {
+            ZonedDateTime inOwnZone = actualFireTime.withZoneSameInstant(constraints.getStart().getZone());
             ExecutionTime fallbackExecutionTime = ExecutionTime.forCron(constraints.getFallbackCronExpression());
-            ZonedDateTime justBeforeStartOfDay = actualFireTime.toLocalDate().atStartOfDay(actualFireTime.getZone())
+            ZonedDateTime justBeforeStartOfDay = inOwnZone.toLocalDate().atStartOfDay(inOwnZone.getZone())
                     .minusSeconds(1);
             return fallbackExecutionTime.nextExecution(justBeforeStartOfDay)
                     .orElseThrow(() -> new IllegalStateException(
-                            "No fallback cron occurrence found on " + actualFireTime.toLocalDate() + " for " + id));
+                            "No fallback cron occurrence found on " + inOwnZone.toLocalDate() + " for " + id));
         }
     }
 
