@@ -483,9 +483,10 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
 
     /**
      * Registers the once-daily carbon-impact batch the first time a {@code carbonImpact}-enabled job is scheduled.
-     * A harmless, wasted {@link CarbonImpactBatchTrigger} may be constructed if this races with another thread also
-     * scheduling a carbonImpact-enabled job for the first time - {@link #registerTask} only lets one of them win -
-     * scheduling happens at application startup, not on a hot path, so this is not worth extra synchronization.
+     * A harmless, wasted {@link CarbonImpactBatchTrigger}/executor may be constructed if this races with another
+     * thread also scheduling a carbonImpact-enabled job for the first time - {@link #registerTask} only lets one of
+     * them win - scheduling happens at application startup, not on a hot path, so this is not worth extra
+     * synchronization; the loser's executor is shut down immediately below instead of being left running.
      */
     private void ensureCarbonImpactBatchRegistered() {
         if (scheduledTasks.containsKey(CarbonImpactBatchTrigger.IDENTITY)) {
@@ -495,12 +496,18 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         LocalTime windowEnd = schedulerConfig.getCarbonImpactBatchWindowEnd();
         Duration jitter = CarbonImpactBatchTrigger.randomJitter(windowStart, windowEnd);
         CarbonImpactBatchTrigger batchTrigger = new CarbonImpactBatchTrigger(clock, windowStart, windowEnd, jitter);
-        this.carbonImpactRetryExecutor = new ScheduledThreadPoolExecutor(1,
+        ScheduledExecutorService retryExecutor = new ScheduledThreadPoolExecutor(1,
                 r -> new Thread(r, "green-scheduler-carbon-impact-retry"));
         CarbonImpactBatchInvoker batchInvoker = new CarbonImpactBatchInvoker(this, carbonImpactHistory, events, clock,
                 actualCarbonIntensityApi, schedulerConfig.getCarbonImpactRetryBackoffs(),
-                schedulerConfig.getCarbonImpactBacklogWindowDays(), carbonImpactRetryExecutor);
-        registerTask(batchTrigger.id, new ScheduledTask(batchTrigger, batchInvoker, true));
+                schedulerConfig.getCarbonImpactBacklogWindowDays(), retryExecutor);
+        ScheduledTask existing = registerTask(batchTrigger.id, new ScheduledTask(batchTrigger, batchInvoker, true));
+        if (existing != null) {
+            // another thread's registration won the race - our executor was never wired into anything, discard it
+            retryExecutor.shutdownNow();
+            return;
+        }
+        this.carbonImpactRetryExecutor = retryExecutor;
     }
 
     /**

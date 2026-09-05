@@ -5,9 +5,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -181,6 +188,59 @@ class GreenObservedWiringTest {
         Trigger secondBatchTrigger = scheduler.getScheduledJob(CarbonImpactBatchTrigger.IDENTITY);
 
         assertThat(secondBatchTrigger).isSameAs(firstBatchTrigger);
+    }
+
+    @Test
+    void concurrentFirstRegistrationsDoNotLeakTheLosingRetryExecutor() throws Exception {
+        scheduler = newScheduler();
+        int concurrency = 8;
+        ExecutorService racers = Executors.newFixedThreadPool(concurrency);
+        CyclicBarrier barrier = new CyclicBarrier(concurrency);
+        try {
+            List<CompletableFuture<Void>> registrations = new ArrayList<>();
+            for (int i = 0; i < concurrency; i++) {
+                String identity = "racer-" + i;
+                registrations.add(CompletableFuture.runAsync(() -> {
+                    GreenScheduled greenScheduled = AnnotationUtil.newGreenScheduled()
+                            .identity(identity)
+                            .successive("0h 1h 2h")
+                            .duration("30m")
+                            .carbonIntensityZone("NL")
+                            .build();
+                    GreenObserved greenObserved = AnnotationUtil.newGreenObserved().carbonImpact(true).build();
+                    awaitBarrier(barrier);
+                    scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", identity,
+                            List.of(greenScheduled), greenObserved));
+                }, racers));
+            }
+            CompletableFuture.allOf(registrations.toArray(CompletableFuture[]::new)).get(10, TimeUnit.SECONDS);
+
+            assertThat(scheduler.getScheduledJob(CarbonImpactBatchTrigger.IDENTITY)).isNotNull();
+            scheduler.close();
+            scheduler = null; // already closed - avoid a redundant afterEach close()
+
+            // proves the fix: every executor created by a losing registration (if the race was actually hit) was
+            // shut down immediately instead of being left running forever
+            Awaitility.await().atMost(5, TimeUnit.SECONDS)
+                    .untilAsserted(() -> assertThat(retryThreadsStillAlive()).isEmpty());
+        } finally {
+            racers.shutdownNow();
+        }
+    }
+
+    private static List<String> retryThreadsStillAlive() {
+        return Thread.getAllStackTraces().keySet().stream()
+                .map(Thread::getName)
+                .filter(name -> name.startsWith("green-scheduler-carbon-impact-retry"))
+                .collect(Collectors.toList());
+    }
+
+    private static void awaitBarrier(CyclicBarrier barrier) {
+        try {
+            barrier.await();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private SimpleScheduler newScheduler() {
