@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import io.carbonintensity.executionplanner.spi.CarbonIntensityPlanner;
+import io.carbonintensity.scheduler.observability.DecisionTimelineEntry;
 
 /**
  * A basic scheduler.
@@ -106,6 +107,13 @@ public interface Scheduler {
         }
 
         default void jobExecutionSuccessful(ScheduledExecution execution) {
+        }
+
+        /**
+         * Fired every time a job's decision timeline gains a new entry - i.e. every real fire of a
+         * {@link GreenScheduled} or programmatic job, unconditionally. See {@link DecisionTimelineEntry}.
+         */
+        default void jobDecisionRecorded(Trigger trigger, DecisionTimelineEntry entry) {
         }
 
         default void schedulerPaused() {

@@ -3,6 +3,7 @@ package io.carbonintensity.scheduler.runtime;
 import io.carbonintensity.scheduler.ScheduledExecution;
 import io.carbonintensity.scheduler.Scheduler;
 import io.carbonintensity.scheduler.Trigger;
+import io.carbonintensity.scheduler.observability.DecisionTimelineEntry;
 
 /**
  * Utility class for firing events related to job execution and scheduler state changes.
@@ -22,6 +23,7 @@ import io.carbonintensity.scheduler.Trigger;
  * <li>Job paused</li>
  * <li>Job resumed</li>
  * <li>Job execution skipped</li>
+ * <li>Job decision recorded</li>
  * </ul>
  * </p>
  *
@@ -83,6 +85,12 @@ public final class Events {
     void fireJobExecutionSkipped(ScheduledExecution execution, String details) {
         for (Scheduler.EventListener listener : simpleScheduler.getEventListeners()) {
             listener.jobExecutionSkipped(execution, details);
+        }
+    }
+
+    void fireJobDecisionRecorded(Trigger trigger, DecisionTimelineEntry entry) {
+        for (Scheduler.EventListener listener : simpleScheduler.getEventListeners()) {
+            listener.jobDecisionRecorded(trigger, entry);
         }
     }
 }
