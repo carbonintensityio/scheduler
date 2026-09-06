@@ -11,7 +11,7 @@ import java.util.OptionalDouble;
  * <p>
  * {@code fireTime} is an {@link Instant}, not a {@link java.time.ZonedDateTime} - which zone to render it in is a
  * display concern (a log line, a docs example), not something to bake into the stored data, consistent with
- * {@link CarbonImpactResult#computedAt()}.
+ * {@code CarbonImpactResult}.
  * <p>
  * {@code intensityValue} is genuinely absent for some {@link DecisionReason}s - a plain fallback (cron or interval
  * spacing) isn't driven by a carbon-intensity value at all, so this is never a sentinel like {@code -1} or

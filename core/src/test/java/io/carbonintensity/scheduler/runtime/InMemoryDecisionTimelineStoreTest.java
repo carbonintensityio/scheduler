@@ -94,6 +94,22 @@ class InMemoryDecisionTimelineStoreTest {
     }
 
     @Test
+    void staysCorrectWhenEntriesArriveOutOfOrder() {
+        // record() carries no ordering precondition - an out-of-order arrival must not fool age-based eviction
+        // (which only ever inspects the front of the list) into keeping a genuinely-too-old entry buried
+        // elsewhere, or evicting a young one instead
+        Instant now = BASE.plus(Duration.ofDays(40));
+        InMemoryDecisionTimelineStore store = newStore(now, Duration.ofDays(30), 100);
+
+        store.record("job-a", entryAt(BASE.plus(Duration.ofDays(35)))); // within window, kept - arrives first
+        store.record("job-a", entryAt(BASE.plus(Duration.ofDays(5)))); // too old, evicted - arrives out of order
+        store.record("job-a", entryAt(BASE.plus(Duration.ofDays(15)))); // within window, kept
+
+        assertThat(store.entriesFor("job-a")).extracting(DecisionTimelineEntry::fireTime)
+                .containsExactly(BASE.plus(Duration.ofDays(15)), BASE.plus(Duration.ofDays(35)));
+    }
+
+    @Test
     void rejectsANonPositiveMaxEntriesPerJob() {
         assertThatThrownBy(() -> newStore(BASE, Duration.ofDays(30), 0))
                 .isInstanceOf(IllegalArgumentException.class);
