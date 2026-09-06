@@ -24,11 +24,13 @@ import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
 import io.carbonintensity.executionplanner.runtime.impl.ZonedCarbonIntensityPeriod;
 import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.scheduler.ScheduledExecution;
+import io.carbonintensity.scheduler.observability.CarbonImpactHistoryStore;
 import io.carbonintensity.scheduler.observability.CarbonImpactResult;
+import io.carbonintensity.scheduler.observability.ExecutionWindow;
 
 /**
  * The invoker behind {@code CarbonImpactBatchTrigger}: once fired, computes and publishes carbon-impact/savings
- * figures for every {@code carbonImpact}-enabled job's pending {@link CarbonImpactHistory} windows.
+ * figures for every {@code carbonImpact}-enabled job's pending {@link CarbonImpactHistoryStore} windows.
  * <p>
  * Per job, pending windows are grouped by the calendar day they fall on (in the scheduler's own clock zone) and
  * processed one day at a time:
@@ -51,7 +53,7 @@ final class CarbonImpactBatchInvoker implements ScheduledInvoker {
     private static final Logger log = LoggerFactory.getLogger(CarbonImpactBatchInvoker.class);
 
     private final SimpleScheduler scheduler;
-    private final CarbonImpactHistory history;
+    private final CarbonImpactHistoryStore history;
     private final Events events;
     private final Clock clock;
     private final CarbonIntensityApi actualApi;
@@ -63,7 +65,7 @@ final class CarbonImpactBatchInvoker implements ScheduledInvoker {
      * @param retryExecutor drives the delay between retries - owned and shut down by {@link SimpleScheduler},
      *        overridable in tests so they don't have to wait on real backoff delays
      */
-    CarbonImpactBatchInvoker(SimpleScheduler scheduler, CarbonImpactHistory history, Events events, Clock clock,
+    CarbonImpactBatchInvoker(SimpleScheduler scheduler, CarbonImpactHistoryStore history, Events events, Clock clock,
             CarbonIntensityApi actualApi, List<Duration> retryBackoffs, int backlogWindowDays,
             ScheduledExecutorService retryExecutor) {
         this.scheduler = scheduler;

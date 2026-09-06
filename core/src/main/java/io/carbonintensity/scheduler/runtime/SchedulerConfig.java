@@ -10,6 +10,7 @@ import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiC
 import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.scheduler.GreenScheduled;
 import io.carbonintensity.scheduler.Scheduler;
+import io.carbonintensity.scheduler.observability.CarbonImpactHistoryStore;
 import io.carbonintensity.scheduler.spi.JobInstrumenter;
 
 /**
@@ -42,6 +43,12 @@ public class SchedulerConfig {
     private CarbonIntensityApiConfig carbonIntensityApiConfig;
 
     private CarbonIntensityApi carbonIntensityApi;
+
+    /**
+     * Pluggable storage for carbon-impact execution windows. {@code null} (the default) uses an in-memory
+     * implementation - lost on restart, see {@link CarbonImpactHistoryStore}'s own Javadoc.
+     */
+    private CarbonImpactHistoryStore carbonImpactHistoryStore;
 
     private JobInstrumenter jobInstrumenter;
 
@@ -185,6 +192,14 @@ public class SchedulerConfig {
 
     public void setCarbonIntensityApi(CarbonIntensityApi carbonIntensityApi) {
         this.carbonIntensityApi = carbonIntensityApi;
+    }
+
+    public CarbonImpactHistoryStore getCarbonImpactHistoryStore() {
+        return carbonImpactHistoryStore;
+    }
+
+    public void setCarbonImpactHistoryStore(CarbonImpactHistoryStore carbonImpactHistoryStore) {
+        this.carbonImpactHistoryStore = carbonImpactHistoryStore;
     }
 
     public JobInstrumenter getJobInstrumenter() {

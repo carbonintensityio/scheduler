@@ -8,18 +8,20 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-class CarbonImpactHistoryTest {
+import io.carbonintensity.scheduler.observability.ExecutionWindow;
+
+class InMemoryCarbonImpactHistoryStoreTest {
 
     @Test
     void shouldReturnEmptyListForUnknownIdentity() {
-        CarbonImpactHistory history = new CarbonImpactHistory();
+        InMemoryCarbonImpactHistoryStore history = new InMemoryCarbonImpactHistoryStore();
 
         assertThat(history.windowsFor("unknown")).isEmpty();
     }
 
     @Test
     void shouldRecordAndReturnWindowsPerIdentity() {
-        CarbonImpactHistory history = new CarbonImpactHistory();
+        InMemoryCarbonImpactHistoryStore history = new InMemoryCarbonImpactHistoryStore();
         Instant start = Instant.parse("2026-09-02T10:00:00Z");
         Instant end = Instant.parse("2026-09-02T10:00:05Z");
 
@@ -31,7 +33,7 @@ class CarbonImpactHistoryTest {
 
     @Test
     void shouldRemoveOnlyProcessedWindows() {
-        CarbonImpactHistory history = new CarbonImpactHistory();
+        InMemoryCarbonImpactHistoryStore history = new InMemoryCarbonImpactHistoryStore();
         history.record("job-a", Instant.parse("2026-09-01T10:00:00Z"), Instant.parse("2026-09-01T10:00:05Z"));
         history.record("job-a", Instant.parse("2026-09-02T10:00:00Z"), Instant.parse("2026-09-02T10:00:05Z"));
 
@@ -50,7 +52,7 @@ class CarbonImpactHistoryTest {
     void removeShouldMatchByReferenceNotByValueEquality() {
         // two distinct executions can share an identical (start, end) - e.g. with a coarse test Clock. remove()
         // must not delete both just because a caller passes in a value-equal, but not the same, instance.
-        CarbonImpactHistory history = new CarbonImpactHistory();
+        InMemoryCarbonImpactHistoryStore history = new InMemoryCarbonImpactHistoryStore();
         Instant start = Instant.parse("2026-09-01T10:00:00Z");
         Instant end = Instant.parse("2026-09-01T10:00:05Z");
         history.record("job-a", start, end);
@@ -64,7 +66,7 @@ class CarbonImpactHistoryTest {
 
     @Test
     void removingFromUnknownIdentityShouldBeANoOp() {
-        CarbonImpactHistory history = new CarbonImpactHistory();
+        InMemoryCarbonImpactHistoryStore history = new InMemoryCarbonImpactHistoryStore();
 
         history.remove("unknown", List.of(new ExecutionWindow(Instant.EPOCH, Instant.EPOCH)));
 
@@ -73,7 +75,7 @@ class CarbonImpactHistoryTest {
 
     @Test
     void windowsForShouldReturnAnImmutableSnapshot() {
-        CarbonImpactHistory history = new CarbonImpactHistory();
+        InMemoryCarbonImpactHistoryStore history = new InMemoryCarbonImpactHistoryStore();
         history.record("job-a", Instant.EPOCH, Instant.EPOCH);
 
         List<ExecutionWindow> windows = history.windowsFor("job-a");

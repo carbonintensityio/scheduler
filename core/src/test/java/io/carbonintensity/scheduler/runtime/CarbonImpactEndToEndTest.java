@@ -23,21 +23,23 @@ import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
 import io.carbonintensity.scheduler.GreenScheduled;
 import io.carbonintensity.scheduler.Scheduler;
 import io.carbonintensity.scheduler.Trigger;
+import io.carbonintensity.scheduler.observability.CarbonImpactHistoryStore;
 import io.carbonintensity.scheduler.observability.CarbonImpactResult;
+import io.carbonintensity.scheduler.observability.ExecutionWindow;
 import io.carbonintensity.scheduler.observability.GreenObserved;
 import io.carbonintensity.scheduler.test.helper.AnnotationUtil;
 import io.carbonintensity.scheduler.test.helper.MutableClock;
 
 /**
  * An end-to-end test of the whole carbon-impact machinery (CIIO-347), driven entirely through the real
- * {@link SimpleScheduler} tick - no manual {@link CarbonImpactHistory#record} or direct
+ * {@link SimpleScheduler} tick - no manual {@link CarbonImpactHistoryStore#record} or direct
  * {@link CarbonImpactBatchInvoker#invoke} call anywhere - with only the outbound carbonintensity-api call replaced
  * by {@link FakeCarbonIntensityApi}:
  * <ol>
  * <li>scheduling a {@code carbonImpact}-enabled job auto-registers the {@link CarbonImpactBatchTrigger}, before it
  * has ever fired;</li>
  * <li>a real {@code FixedWindowTrigger} fire is captured by the real {@link CarbonImpactHistoryInvoker} into
- * {@link CarbonImpactHistory};</li>
+ * {@link CarbonImpactHistoryStore};</li>
  * <li>a real {@link CarbonImpactBatchTrigger} fire the next day dispatches a real
  * {@link CarbonImpactBatchInvoker#invoke} on the scheduler's own job executor;</li>
  * <li>which fetches (from the fake), computes, and publishes a {@link CarbonImpactResult} through the real

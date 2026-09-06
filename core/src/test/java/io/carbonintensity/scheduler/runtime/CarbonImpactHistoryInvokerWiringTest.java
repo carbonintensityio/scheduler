@@ -14,6 +14,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.carbonintensity.scheduler.GreenScheduled;
+import io.carbonintensity.scheduler.observability.ExecutionWindow;
 import io.carbonintensity.scheduler.observability.GreenObserved;
 import io.carbonintensity.scheduler.test.helper.AnnotationUtil;
 import io.carbonintensity.scheduler.test.helper.DisabledDummyCarbonIntensityApi;

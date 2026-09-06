@@ -52,6 +52,7 @@ import io.carbonintensity.scheduler.ScheduledExecution;
 import io.carbonintensity.scheduler.Scheduler;
 import io.carbonintensity.scheduler.SkipPredicate;
 import io.carbonintensity.scheduler.Trigger;
+import io.carbonintensity.scheduler.observability.CarbonImpactHistoryStore;
 import io.carbonintensity.scheduler.observability.CarbonImpactResult;
 import io.carbonintensity.scheduler.observability.GreenObserved;
 import io.carbonintensity.scheduler.runtime.SchedulerConfig.StartMode;
@@ -125,7 +126,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     private final JobInstrumenter jobInstrumenter;
     private final List<EventListener> eventListeners;
     private final Events events;
-    private final CarbonImpactHistory carbonImpactHistory;
+    private final CarbonImpactHistoryStore carbonImpactHistory;
 
     public SimpleScheduler(SchedulerConfig schedulerConfig) {
         this.clock = schedulerConfig.getClock();
@@ -137,7 +138,8 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         this.jobInstrumenter = schedulerConfig.getJobInstrumenter();
         this.eventListeners = new ArrayList<>();
         this.slotTracker = new ConcurrencySlotTracker();
-        this.carbonImpactHistory = new CarbonImpactHistory();
+        this.carbonImpactHistory = Objects.requireNonNullElse(schedulerConfig.getCarbonImpactHistoryStore(),
+                new InMemoryCarbonImpactHistoryStore());
 
         if (!schedulerConfig.isEnabled()) {
             log.info("Simple scheduler is disabled by config property and will not be started.");
@@ -352,7 +354,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         return new ArrayList<>(this.eventListeners);
     }
 
-    CarbonImpactHistory getCarbonImpactHistory() {
+    CarbonImpactHistoryStore getCarbonImpactHistory() {
         return carbonImpactHistory;
     }
 

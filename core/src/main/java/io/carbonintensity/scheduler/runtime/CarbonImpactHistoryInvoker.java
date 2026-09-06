@@ -5,10 +5,11 @@ import java.time.Instant;
 import java.util.concurrent.CompletionStage;
 
 import io.carbonintensity.scheduler.ScheduledExecution;
+import io.carbonintensity.scheduler.observability.CarbonImpactHistoryStore;
 
 /**
  * An invoker wrapper that records the wall-clock start/end of every successful execution into a
- * {@link CarbonImpactHistory}, for a job whose {@code carbonImpact} observability is enabled.
+ * {@link CarbonImpactHistoryStore}, for a job whose {@code carbonImpact} observability is enabled.
  * <p>
  * Wraps the raw, innermost invoker - before {@link StatusEmitterInvoker} and the other decorators applied by
  * {@link SimpleScheduler#initInvoker} - so the recorded window reflects only the job's own execution time, not
@@ -19,9 +20,9 @@ final class CarbonImpactHistoryInvoker extends DelegateInvoker {
 
     private final Clock clock;
     private final String identity;
-    private final CarbonImpactHistory history;
+    private final CarbonImpactHistoryStore history;
 
-    CarbonImpactHistoryInvoker(ScheduledInvoker delegate, Clock clock, String identity, CarbonImpactHistory history) {
+    CarbonImpactHistoryInvoker(ScheduledInvoker delegate, Clock clock, String identity, CarbonImpactHistoryStore history) {
         super(delegate);
         this.clock = clock;
         this.identity = identity;

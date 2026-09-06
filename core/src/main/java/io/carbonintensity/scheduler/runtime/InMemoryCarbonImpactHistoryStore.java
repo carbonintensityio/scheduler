@@ -9,38 +9,37 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
+import io.carbonintensity.scheduler.observability.CarbonImpactHistoryStore;
+import io.carbonintensity.scheduler.observability.ExecutionWindow;
+
 /**
- * In-memory record of successful executions for {@code carbonImpact}-enabled jobs, awaiting processing by the
- * carbon-impact batch.
+ * The default {@link CarbonImpactHistoryStore}: an in-memory record of successful executions for
+ * {@code carbonImpact}-enabled jobs, awaiting processing by the carbon-impact batch.
  * <p>
  * Deliberately not persisted: if the application restarts before the batch runs, that day's executions are lost for
  * good, and never contribute to the job's carbon-impact/savings figures - see {@code CarbonImpactBatchTrigger}. The
- * cumulative savings total is therefore a lower bound, not a reconciled ledger.
+ * cumulative savings total is therefore a lower bound, not a reconciled ledger. A consumer needing that data to
+ * survive a restart can implement {@link CarbonImpactHistoryStore} against their own datastore instead - see
+ * {@link SchedulerConfig#setCarbonImpactHistoryStore}.
  */
-final class CarbonImpactHistory {
+public final class InMemoryCarbonImpactHistoryStore implements CarbonImpactHistoryStore {
 
     private final ConcurrentMap<String, ConcurrentLinkedQueue<ExecutionWindow>> windowsByIdentity = new ConcurrentHashMap<>();
 
-    void record(String identity, Instant start, Instant end) {
+    @Override
+    public void record(String identity, Instant start, Instant end) {
         windowsByIdentity.computeIfAbsent(identity, id -> new ConcurrentLinkedQueue<>())
                 .add(new ExecutionWindow(start, end));
     }
 
-    /**
-     * @return an immutable snapshot of the windows currently recorded for {@code identity}
-     */
-    List<ExecutionWindow> windowsFor(String identity) {
+    @Override
+    public List<ExecutionWindow> windowsFor(String identity) {
         ConcurrentLinkedQueue<ExecutionWindow> windows = windowsByIdentity.get(identity);
         return windows == null ? List.of() : List.copyOf(windows);
     }
 
-    /**
-     * Removes windows that were successfully processed by the batch, so they are not counted again on a later run.
-     * <p>
-     * Matches by reference, not {@link ExecutionWindow#equals(Object)}: two distinct executions can otherwise share
-     * an identical (start, end), and value-equality removal would then delete an unprocessed window too.
-     */
-    void remove(String identity, List<ExecutionWindow> processed) {
+    @Override
+    public void remove(String identity, List<ExecutionWindow> processed) {
         ConcurrentLinkedQueue<ExecutionWindow> windows = windowsByIdentity.get(identity);
         if (windows == null || processed.isEmpty()) {
             return;
