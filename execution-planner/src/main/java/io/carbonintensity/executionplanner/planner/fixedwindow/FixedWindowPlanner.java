@@ -2,7 +2,6 @@ package io.carbonintensity.executionplanner.planner.fixedwindow;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +85,7 @@ public class FixedWindowPlanner implements CarbonIntensityPlanner<FixedWindowPla
         if (slotTracker == null || maxConcurrentPerSlot <= 0) {
             Timeslot best = strategy.bestTimeslot(constraints.getStart(), constraints.getEnd(), constraints.getDuration(),
                     carbonIntensity);
-            return best == null ? null : toPlannedExecution(best);
+            return best == null ? null : PlannedExecution.from(best);
         }
 
         return pickTimeslot(strategy, constraints, carbonIntensity);
@@ -104,7 +103,7 @@ public class FixedWindowPlanner implements CarbonIntensityPlanner<FixedWindowPla
         String identity = constraints.getIdentity();
         for (Timeslot candidate : ranked) {
             if (slotTracker.tryReserve(zone, identity, candidate.start().toInstant(), maxConcurrentPerSlot)) {
-                return toPlannedExecution(candidate);
+                return PlannedExecution.from(candidate);
             }
         }
 
@@ -115,10 +114,6 @@ public class FixedWindowPlanner implements CarbonIntensityPlanner<FixedWindowPla
                 "Concurrency limit of {} per slot exceeded for zone {} at {} - scheduling '{}' anyway to honor its fixed window",
                 maxConcurrentPerSlot, zone, best.start(), identity);
         slotTracker.reserve(zone, identity, best.start().toInstant());
-        return toPlannedExecution(best);
-    }
-
-    private static PlannedExecution toPlannedExecution(Timeslot timeslot) {
-        return new PlannedExecution(timeslot.start(), Optional.ofNullable(timeslot.carbonIntensity()));
+        return PlannedExecution.from(best);
     }
 }

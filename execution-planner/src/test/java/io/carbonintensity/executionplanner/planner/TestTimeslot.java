@@ -72,4 +72,19 @@ class TestTimeslot {
         // should give exactly one slot
         assertThat(timeslots).hasSize(1);
     }
+
+    @Test
+    void testNoOverlappingDataYieldsAnAbsentIntensityNeverAZero() {
+        // Far outside the fixture's actual date range - no CarbonIntensityPeriod overlaps this window at all,
+        // a genuine data gap that must not be conflated with a real zero-intensity slot.
+        ZonedDateTime ws = ZonedDateTime.parse("2099-01-01T00:00:00Z");
+        ZonedDateTime we = ws.plusHours(1);
+
+        List<CarbonIntensityPeriod> periods = CarbonIntensityPeriod.of(carbonIntensity);
+        assertThat(Timeslot.calculateCarbonIntensity(periods, ws, we)).isEmpty();
+
+        List<Timeslot> timeslots = Timeslot.getTimeslots(ws, we, ofHours(1), ofHours(1), carbonIntensity);
+        assertThat(timeslots).isNotEmpty();
+        assertThat(timeslots).extracting(Timeslot::carbonIntensity).containsOnlyNulls();
+    }
 }

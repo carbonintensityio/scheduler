@@ -5,6 +5,8 @@ import java.time.ZonedDateTime;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.carbonintensity.executionplanner.planner.Timeslot;
+
 /**
  * The outcome of a successful {@link CarbonIntensityPlanner#getNextExecutionTime} call: the chosen fire time, and
  * the carbon-intensity value of the timeslot it was chosen from, when known.
@@ -19,4 +21,12 @@ public record PlannedExecution(ZonedDateTime fireTime, Optional<BigDecimal> inte
         Objects.requireNonNull(intensityValue, "IntensityValue cannot be null - use Optional.empty()");
     }
 
+    /**
+     * The single, shared conversion point every {@link CarbonIntensityPlanner} implementation should use - so a
+     * {@code null} {@link Timeslot#carbonIntensity()} (a genuine data gap) consistently becomes an absent
+     * {@code intensityValue} here, rather than each planner re-deriving that mapping on its own.
+     */
+    public static PlannedExecution from(Timeslot timeslot) {
+        return new PlannedExecution(timeslot.start(), Optional.ofNullable(timeslot.carbonIntensity()));
+    }
 }

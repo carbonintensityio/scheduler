@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
 
@@ -17,6 +18,10 @@ import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
 public class Timeslot {
     ZonedDateTime start;
     ZonedDateTime end;
+    /**
+     * {@code null} when no {@link CarbonIntensityPeriod} overlapped this slot at all - a genuine data gap, never
+     * to be confused with a real zero-intensity slot.
+     */
     BigDecimal carbonIntensity;
 
     public Timeslot(ZonedDateTime start, ZonedDateTime end, BigDecimal carbonIntensity) {
@@ -33,6 +38,10 @@ public class Timeslot {
         return end;
     }
 
+    /**
+     * @return the carbon-intensity value for this slot, or {@code null} if no data was available to compute one -
+     *         never a sentinel like {@link BigDecimal#ZERO} standing in for "unknown"
+     */
     public BigDecimal carbonIntensity() {
         return carbonIntensity;
     }
@@ -57,19 +66,30 @@ public class Timeslot {
 
         while (!s.isAfter(we)) { // allow equal for 0 windows
             ZonedDateTime e = s.plus(timeslotDuration);
-            timeslots.add(new Timeslot(s, e, calculateCarbonIntensity(periods, s, e)));
+            timeslots.add(new Timeslot(s, e, calculateCarbonIntensity(periods, s, e).orElse(null)));
             s = s.plus(resolution);
         }
         return timeslots;
     }
 
-    public static BigDecimal calculateCarbonIntensity(List<CarbonIntensityPeriod> carbonIntensityInstants, ZonedDateTime start,
-            ZonedDateTime end) {
-        // find carbon intensities.
-        return carbonIntensityInstants.stream()
+    /**
+     * @return the summed carbon-intensity contribution of every {@link CarbonIntensityPeriod} overlapping
+     *         {@code [start, end]}, or {@link Optional#empty()} if none overlapped at all - distinguishing a
+     *         genuine data gap from a real zero, which {@link BigDecimal#ZERO} as a reduce identity could not
+     */
+    public static Optional<BigDecimal> calculateCarbonIntensity(List<CarbonIntensityPeriod> carbonIntensityInstants,
+            ZonedDateTime start, ZonedDateTime end) {
+        List<CarbonIntensityPeriod> overlapping = carbonIntensityInstants.stream()
                 .filter(m -> m.contains(start.toInstant()) || m.contains(end.toInstant()))
-                .map(ci -> calculateCarbonIntensity(start, end, ci))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                .toList();
+        if (overlapping.isEmpty()) {
+            return Optional.empty();
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        for (CarbonIntensityPeriod ci : overlapping) {
+            sum = sum.add(calculateCarbonIntensity(start, end, ci));
+        }
+        return Optional.of(sum);
     }
 
     private static BigDecimal calculateCarbonIntensity(ZonedDateTime start, ZonedDateTime end, CarbonIntensityPeriod ci) {
