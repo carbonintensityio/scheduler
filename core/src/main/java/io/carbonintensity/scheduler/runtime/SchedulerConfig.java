@@ -8,6 +8,7 @@ import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiC
 import io.carbonintensity.executionplanner.spi.CarbonIntensityApi;
 import io.carbonintensity.scheduler.GreenScheduled;
 import io.carbonintensity.scheduler.Scheduler;
+import io.carbonintensity.scheduler.observability.DecisionTimelineStore;
 import io.carbonintensity.scheduler.spi.JobInstrumenter;
 
 /**
@@ -67,6 +68,24 @@ public class SchedulerConfig {
      * the next-best slot instead, but a job's configured window always takes priority over this limit.
      */
     private int maxConcurrentPerSlot = SchedulerDefaults.DEFAULT_MAX_CONCURRENT_PER_SLOT;
+
+    /**
+     * Override hook for the decision-timeline's storage - {@code null} (the default) means the scheduler uses its
+     * own in-memory implementation. See {@link DecisionTimelineStore} for why a consumer might plug in their own.
+     */
+    private DecisionTimelineStore decisionTimelineStore;
+
+    /**
+     * How many days of decision-timeline entries the default in-memory store retains per job. Ignored when
+     * {@link #decisionTimelineStore} is overridden - a custom store is responsible for its own retention policy.
+     */
+    private int decisionTimelineRetentionDays = SchedulerDefaults.DEFAULT_DECISION_TIMELINE_RETENTION_DAYS;
+
+    /**
+     * Hard cap on decision-timeline entries retained per job in the default in-memory store, regardless of age.
+     * Ignored when {@link #decisionTimelineStore} is overridden.
+     */
+    private int decisionTimelineMaxEntriesPerJob = SchedulerDefaults.DEFAULT_DECISION_TIMELINE_MAX_ENTRIES_PER_JOB;
 
     public boolean isEnabled() {
         return enabled;
@@ -175,6 +194,36 @@ public class SchedulerConfig {
 
     public void setClock(Clock clock) {
         this.clock = clock;
+    }
+
+    public DecisionTimelineStore getDecisionTimelineStore() {
+        return decisionTimelineStore;
+    }
+
+    public void setDecisionTimelineStore(DecisionTimelineStore decisionTimelineStore) {
+        this.decisionTimelineStore = decisionTimelineStore;
+    }
+
+    public int getDecisionTimelineRetentionDays() {
+        return decisionTimelineRetentionDays;
+    }
+
+    public void setDecisionTimelineRetentionDays(int decisionTimelineRetentionDays) {
+        if (decisionTimelineRetentionDays < 1) {
+            throw new IllegalArgumentException("Decision-timeline retention days cannot be less than 1");
+        }
+        this.decisionTimelineRetentionDays = decisionTimelineRetentionDays;
+    }
+
+    public int getDecisionTimelineMaxEntriesPerJob() {
+        return decisionTimelineMaxEntriesPerJob;
+    }
+
+    public void setDecisionTimelineMaxEntriesPerJob(int decisionTimelineMaxEntriesPerJob) {
+        if (decisionTimelineMaxEntriesPerJob < 1) {
+            throw new IllegalArgumentException("Decision-timeline max entries per job cannot be less than 1");
+        }
+        this.decisionTimelineMaxEntriesPerJob = decisionTimelineMaxEntriesPerJob;
     }
 
 }

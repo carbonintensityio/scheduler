@@ -21,6 +21,17 @@ public final class SchedulerDefaults {
      */
     public static final int DEFAULT_MAX_CONCURRENT_PER_SLOT = 0;
 
+    /**
+     * How many days of decision-timeline entries the default in-memory store retains per job.
+     */
+    public static final int DEFAULT_DECISION_TIMELINE_RETENTION_DAYS = 30;
+
+    /**
+     * Hard cap on decision-timeline entries retained per job, regardless of age - a safety net against a
+     * pathologically high-frequency job accumulating unbounded memory within the retention window.
+     */
+    public static final int DEFAULT_DECISION_TIMELINE_MAX_ENTRIES_PER_JOB = 1000;
+
     private SchedulerDefaults() {
     }
 }
