@@ -1,8 +1,8 @@
 package io.carbonintensity.executionplanner.planner.fixedwindow;
 
 import java.time.Duration;
-import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +13,7 @@ import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetch
 import io.carbonintensity.executionplanner.runtime.impl.ZonedCarbonIntensityPeriod;
 import io.carbonintensity.executionplanner.spi.CarbonIntensityPlanner;
 import io.carbonintensity.executionplanner.spi.ConcurrencySlotTracker;
+import io.carbonintensity.executionplanner.spi.PlannedExecution;
 import io.carbonintensity.executionplanner.strategy.SingleJobStrategy;
 
 /**
@@ -71,7 +72,7 @@ public class FixedWindowPlanner implements CarbonIntensityPlanner<FixedWindowPla
     }
 
     @Override
-    public ZonedDateTime getNextExecutionTime(FixedWindowPlanningConstraints constraints) {
+    public PlannedExecution getNextExecutionTime(FixedWindowPlanningConstraints constraints) {
 
         final var period = new ZonedCarbonIntensityPeriod.Builder()
                 .withStartTime(constraints.getStart())
@@ -85,13 +86,13 @@ public class FixedWindowPlanner implements CarbonIntensityPlanner<FixedWindowPla
         if (slotTracker == null || maxConcurrentPerSlot <= 0) {
             Timeslot best = strategy.bestTimeslot(constraints.getStart(), constraints.getEnd(), constraints.getDuration(),
                     carbonIntensity);
-            return best == null ? null : best.start();
+            return best == null ? null : toPlannedExecution(best);
         }
 
         return pickTimeslot(strategy, constraints, carbonIntensity);
     }
 
-    private ZonedDateTime pickTimeslot(SingleJobStrategy strategy, FixedWindowPlanningConstraints constraints,
+    private PlannedExecution pickTimeslot(SingleJobStrategy strategy, FixedWindowPlanningConstraints constraints,
             CarbonIntensity carbonIntensity) {
         List<Timeslot> ranked = strategy.rankedTimeslots(constraints.getStart(), constraints.getEnd(),
                 constraints.getDuration(), carbonIntensity);
@@ -103,7 +104,7 @@ public class FixedWindowPlanner implements CarbonIntensityPlanner<FixedWindowPla
         String identity = constraints.getIdentity();
         for (Timeslot candidate : ranked) {
             if (slotTracker.tryReserve(zone, identity, candidate.start().toInstant(), maxConcurrentPerSlot)) {
-                return candidate.start();
+                return toPlannedExecution(candidate);
             }
         }
 
@@ -114,6 +115,10 @@ public class FixedWindowPlanner implements CarbonIntensityPlanner<FixedWindowPla
                 "Concurrency limit of {} per slot exceeded for zone {} at {} - scheduling '{}' anyway to honor its fixed window",
                 maxConcurrentPerSlot, zone, best.start(), identity);
         slotTracker.reserve(zone, identity, best.start().toInstant());
-        return best.start();
+        return toPlannedExecution(best);
+    }
+
+    private static PlannedExecution toPlannedExecution(Timeslot timeslot) {
+        return new PlannedExecution(timeslot.start(), Optional.ofNullable(timeslot.carbonIntensity()));
     }
 }

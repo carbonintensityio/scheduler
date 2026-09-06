@@ -1,5 +1,6 @@
 package io.carbonintensity.scheduler.runtime;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -44,6 +45,7 @@ import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityApiT
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityRestApi;
 import io.carbonintensity.executionplanner.spi.CarbonIntensityPlanner;
 import io.carbonintensity.executionplanner.spi.ConcurrencySlotTracker;
+import io.carbonintensity.executionplanner.spi.PlannedExecution;
 import io.carbonintensity.executionplanner.spi.PlanningConstraints;
 import io.carbonintensity.scheduler.ConcurrentExecution;
 import io.carbonintensity.scheduler.GreenScheduled;
@@ -355,15 +357,14 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
      * Records a {@link DecisionTimelineEntry} for a real trigger fire, unconditionally - no {@code @GreenObserved}
      * opt-in required, since this is the "is this a black box" baseline the decision timeline exists for.
      * <p>
-     * {@link SimpleTrigger#strategy()} throws by default, only overridden by {@link FixedWindowTrigger} and
-     * {@link SuccessiveTrigger} - any other trigger type (an internal, non-adopter-facing trigger with no "green"
-     * decision to explain) is silently excluded from the decision timeline by simply never overriding it.
+     * {@link Trigger#getDecisionStrategy()} defaults to {@link Optional#empty()}, only overridden by
+     * {@link FixedWindowTrigger} and {@link SuccessiveTrigger} - any other trigger type (an internal,
+     * non-adopter-facing trigger with no "green" decision to explain) is silently excluded from the decision
+     * timeline by simply never overriding it.
      */
     private void recordDecision(SimpleTrigger trigger, ZonedDateTime scheduledFireTime) {
-        DecisionStrategy strategy;
-        try {
-            strategy = trigger.strategy();
-        } catch (UnsupportedOperationException e) {
+        Optional<DecisionStrategy> strategy = trigger.getDecisionStrategy();
+        if (strategy.isEmpty()) {
             return;
         }
         DecisionReason reason = trigger.lastDecisionReason;
@@ -372,8 +373,12 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                     trigger.getId());
             return;
         }
-        DecisionTimelineEntry entry = new DecisionTimelineEntry(scheduledFireTime.toInstant(), strategy, reason,
-                OptionalDouble.empty());
+        // absent for fallback-driven fires (cron/plain-interval) that never went through a carbon-aware planner
+        // call at all - never fabricated
+        OptionalDouble intensityValue = trigger.lastDecisionIntensityValue.stream().mapToDouble(BigDecimal::doubleValue)
+                .findFirst();
+        DecisionTimelineEntry entry = new DecisionTimelineEntry(scheduledFireTime.toInstant(), strategy.get(), reason,
+                intensityValue);
         try {
             decisionTimelineStore.record(trigger.getId(), entry);
         } catch (RuntimeException e) {
@@ -595,7 +600,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         @Override
         public Instant getNextFireTime() {
             if (successivePlanner.canSchedule(constraints)) {
-                return successivePlanner.getNextExecutionTime(constraints).toInstant();
+                return successivePlanner.getNextExecutionTime(constraints).fireTime().toInstant();
             }
             // fallback to interval trigger
             return super.getNextFireTime();
@@ -608,28 +613,29 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                     return null;
                 }
 
-                ZonedDateTime nextExecutionTime = null;
+                PlannedExecution nextExecution = null;
 
                 // first invocation
                 if (lastFireTime == null) {
-                    nextExecutionTime = successivePlanner.getNextExecutionTime(constraints);
+                    nextExecution = successivePlanner.getNextExecutionTime(constraints);
                 }
 
                 // sequential invocations
                 if (lastFireTime != null && now.plusSeconds(1).isAfter(lastFireTime.plus(constraints.getMinimumGap()))) {
-                    nextExecutionTime = successivePlanner
+                    nextExecution = successivePlanner
                             .getNextExecutionTime(DefaultSuccessivePlanningConstraints.from(constraints)
                                     .withLastExecutionTime(lastFireTime)
                                     .build());
                 }
 
-                if (nextExecutionTime != null) {
-                    ZonedDateTime nextTruncated = nextExecutionTime.truncatedTo(ChronoUnit.SECONDS);
+                if (nextExecution != null) {
+                    ZonedDateTime nextTruncated = nextExecution.fireTime().truncatedTo(ChronoUnit.SECONDS);
                     if (now.isAfter(nextTruncated) && (lastFireTime == null || lastFireTime.isBefore(nextTruncated))) {
                         log.debug("Job '{}' fired at {} (greenest available slot honoring its gap window)", getId(),
                                 nextTruncated);
                         lastFireTime = now;
                         lastDecisionReason = DecisionReason.GREENEST_AVAILABLE_SLOT;
+                        lastDecisionIntensityValue = nextExecution.intensityValue();
                         return nextTruncated;
                     }
                 }
@@ -654,8 +660,13 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
 
         @Override
-        DecisionStrategy strategy() {
-            return DecisionStrategy.SUCCESSIVE;
+        public Optional<DecisionStrategy> getDecisionStrategy() {
+            return Optional.of(DecisionStrategy.SUCCESSIVE);
+        }
+
+        @Override
+        public String getCarbonIntensityZone() {
+            return constraints.getCarbonIntensityZone();
         }
     }
 
@@ -685,6 +696,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         protected final ZonedDateTime start;
         protected volatile ZonedDateTime lastFireTime;
         volatile DecisionReason lastDecisionReason;
+        volatile Optional<BigDecimal> lastDecisionIntensityValue = Optional.empty();
 
         SimpleTrigger(String id, Clock clock, ZonedDateTime start, String description) {
             this.id = id;
@@ -721,20 +733,6 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         @Override
         public String getMethodDescription() {
             return methodDescription;
-        }
-
-        /**
-         * Which top-level {@link DecisionStrategy} this trigger represents, for the decision timeline.
-         * <p>
-         * Throws by default: only {@link FixedWindowTrigger} and {@link SuccessiveTrigger} - the only trigger types
-         * ever registered as a job's own top-level trigger - override this. {@link CronTrigger}/{@link IntervalTrigger}
-         * are only ever reached internally as their fallback path and never registered directly, so they never need
-         * to answer this; a future internal-only trigger type that doesn't override this is, by design, silently
-         * excluded from the decision timeline (see {@code recordDecision}) rather than needing an explicit opt-out.
-         */
-        DecisionStrategy strategy() {
-            throw new UnsupportedOperationException(
-                    "No decision-timeline strategy defined for " + getClass().getSimpleName());
         }
     }
 
@@ -843,7 +841,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
 
         @Override
         public Instant getNextFireTime() {
-            return planner.getNextExecutionTime(constraints).toInstant();
+            return planner.getNextExecutionTime(constraints).fireTime().toInstant();
         }
 
         @Override
@@ -860,17 +858,18 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
 
             // first invocation
             if (lastFireTime == null || now.isAfter(lastFireTime)) {
-                ZonedDateTime nextExecutionTime = planner.getNextExecutionTime(constraints);
-                if (nextExecutionTime != null) {
-                    ZonedDateTime nextTruncated = nextExecutionTime.truncatedTo(ChronoUnit.SECONDS);
+                PlannedExecution nextExecution = planner.getNextExecutionTime(constraints);
+                if (nextExecution != null) {
+                    ZonedDateTime nextTruncated = nextExecution.fireTime().truncatedTo(ChronoUnit.SECONDS);
                     if (now.isAfter(nextTruncated) && (lastFireTime == null || lastFireTime.isBefore(nextTruncated))) {
                         log.debug("Job '{}' fired at {} (greenest available slot in its window)", this.id, nextTruncated);
                         lastFireTime = now;
                         lastDecisionReason = DecisionReason.GREENEST_AVAILABLE_SLOT;
+                        lastDecisionIntensityValue = nextExecution.intensityValue();
                         constraints = DefaultFixedWindowPlanningConstraints.from(constraints)
                                 .withStartAndEnd(constraints.getStart().plusDays(1), constraints.getEnd().plusDays(1))
                                 .build();
-                        return nextExecutionTime;
+                        return nextExecution.fireTime();
                     }
                 }
             }
@@ -884,8 +883,13 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
 
         @Override
-        DecisionStrategy strategy() {
-            return DecisionStrategy.FIXED_WINDOW;
+        public Optional<DecisionStrategy> getDecisionStrategy() {
+            return Optional.of(DecisionStrategy.FIXED_WINDOW);
+        }
+
+        @Override
+        public String getCarbonIntensityZone() {
+            return constraints.getCarbonIntensityZone();
         }
     }
 

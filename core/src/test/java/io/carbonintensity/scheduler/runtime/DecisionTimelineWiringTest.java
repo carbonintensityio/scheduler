@@ -1,7 +1,6 @@
 package io.carbonintensity.scheduler.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -105,7 +104,12 @@ class DecisionTimelineWiringTest {
         DecisionTimelineEntry entry = storedEntries.get(0);
         assertThat(entry.strategy()).isEqualTo(DecisionStrategy.FIXED_WINDOW);
         assertThat(entry.reason()).isEqualTo(DecisionReason.GREENEST_AVAILABLE_SLOT);
-        assertThat(entry.intensityValue()).isEmpty();
+        // a carbon-aware fire (as opposed to a fallback cron/interval fire, which never queried a planner)
+        // must carry the real value the planner used to pick this slot - never a fabricated one. The exact
+        // number is the planner's own responsibility to get right (see TestFixedWindowPlanner); this just
+        // proves it is no longer discarded on the way into the decision-timeline entry.
+        assertThat(entry.intensityValue()).isPresent();
+        assertThat(entry.intensityValue().getAsDouble()).isGreaterThan(0);
         assertThat(firedEvents).containsExactly(entry);
     }
 
@@ -206,7 +210,7 @@ class DecisionTimelineWiringTest {
     }
 
     @Test
-    void simpleTriggerStrategyThrowsByDefaultUnlessOverridden() {
+    void simpleTriggerHasNoDecisionStrategyByDefaultUnlessOverridden() {
         SimpleScheduler.SimpleTrigger noStrategyTrigger = new SimpleScheduler.SimpleTrigger("no-strategy",
                 Clock.systemUTC(), ZonedDateTime.now(), "test") {
             @Override
@@ -225,7 +229,7 @@ class DecisionTimelineWiringTest {
             }
         };
 
-        assertThatThrownBy(noStrategyTrigger::strategy).isInstanceOf(UnsupportedOperationException.class);
+        assertThat(noStrategyTrigger.getDecisionStrategy()).isEmpty();
     }
 
     private ScheduledInvoker noopInvoker() {
