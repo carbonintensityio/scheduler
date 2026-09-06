@@ -172,7 +172,11 @@ class DecisionTimelineWiringTest {
         scheduler = new SimpleScheduler(config);
 
         CopyOnWriteArrayList<String> observedIdentityA = new CopyOnWriteArrayList<>();
+        CopyOnWriteArrayList<String> observedStrategyA = new CopyOnWriteArrayList<>();
+        CopyOnWriteArrayList<String> observedZoneA = new CopyOnWriteArrayList<>();
         CopyOnWriteArrayList<String> observedIdentityB = new CopyOnWriteArrayList<>();
+        CopyOnWriteArrayList<String> observedStrategyB = new CopyOnWriteArrayList<>();
+        CopyOnWriteArrayList<String> observedZoneB = new CopyOnWriteArrayList<>();
         CountDownLatch jobADone = new CountDownLatch(1);
         CountDownLatch jobBDone = new CountDownLatch(1);
 
@@ -181,6 +185,8 @@ class DecisionTimelineWiringTest {
                 .identity("job-a").timeZone("Europe/Amsterdam").build();
         scheduler.scheduleMethod(new ImmutableScheduledMethod(execution -> {
             observedIdentityA.add(MDC.get("identity"));
+            observedStrategyA.add(MDC.get("strategy"));
+            observedZoneA.add(MDC.get("zone"));
             jobADone.countDown();
             return CompletableFuture.completedFuture(null);
         }, getClass().getName(), "job-a", List.of(jobA)));
@@ -192,12 +198,15 @@ class DecisionTimelineWiringTest {
 
         // a second, differently-identified job registered right after, targeting the same (still-open) window -
         // its greenest slot (deterministically the same 07:15, per the fallback dataset) is already in the past
-        // relative to "now", so it fires as soon as triggers are checked again - still the same single-thread pool
+        // relative to "now", so it fires as soon as triggers are checked again - still the same single-thread pool.
+        // Uses a different zone than job-a so a leaked MDC value would be caught, not just a coincidental match.
         GreenScheduled jobB = AnnotationUtil.newGreenScheduled()
-                .fixedWindow("05:15 08:15").carbonIntensityZone("NL").duration("2h")
+                .fixedWindow("05:15 08:15").carbonIntensityZone("DE").duration("2h")
                 .identity("job-b").timeZone("Europe/Amsterdam").build();
         scheduler.scheduleMethod(new ImmutableScheduledMethod(execution -> {
             observedIdentityB.add(MDC.get("identity"));
+            observedStrategyB.add(MDC.get("strategy"));
+            observedZoneB.add(MDC.get("zone"));
             jobBDone.countDown();
             return CompletableFuture.completedFuture(null);
         }, getClass().getName(), "job-b", List.of(jobB)));
@@ -207,6 +216,10 @@ class DecisionTimelineWiringTest {
 
         assertThat(observedIdentityA).containsExactly("job-a");
         assertThat(observedIdentityB).containsExactly("job-b"); // not "job-a" - proves no leak onto the shared thread
+        assertThat(observedStrategyA).containsExactly("FIXED_WINDOW");
+        assertThat(observedStrategyB).containsExactly("FIXED_WINDOW");
+        assertThat(observedZoneA).containsExactly("NL");
+        assertThat(observedZoneB).containsExactly("DE"); // not "NL" - proves no leak onto the shared thread
     }
 
     @Test
