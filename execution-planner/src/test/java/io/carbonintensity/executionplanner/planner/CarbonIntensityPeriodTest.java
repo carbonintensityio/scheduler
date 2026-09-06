@@ -46,17 +46,23 @@ class CarbonIntensityPeriodTest {
     }
 
     @Test
-    void containsIsInclusiveOfBothTheStartAndEndInstantExactly() {
+    void containsIsInclusiveOfTheStartAndExclusiveOfTheEndInstant() {
         CarbonIntensityPeriod p = period(BigDecimal.ONE);
         Instant end = START.plus(RESOLUTION);
 
-        // Kills the "changed conditional boundary"/"negated conditional" mutants on line 74:
-        // a point exactly on either edge must count as contained, and one nanosecond outside
-        // either edge must not.
+        // Kills the "changed conditional boundary"/"negated conditional" mutants on the contains()
+        // comparisons: a point exactly on the start edge must count as contained, one nanosecond
+        // before the start must not, and neither must the end instant itself.
+        //
+        // The upper bound is deliberately EXCLUSIVE, not inclusive: CarbonIntensityPeriod.of(...)
+        // produces contiguous periods where period[i].moment() + resolution == period[i + 1].moment().
+        // If both bounds were inclusive (as an earlier version of this test asserted), that shared
+        // boundary instant would be reported as contained by two consecutive periods at once - see
+        // CIIO-366, which found this exact double-inclusive bug via a property test.
         assertThat(p.contains(START)).as("exactly at the start").isTrue();
-        assertThat(p.contains(end)).as("exactly at the end").isTrue();
+        assertThat(p.contains(end)).as("exactly at the end").isFalse();
         assertThat(p.contains(START.minusNanos(1))).as("one ns before the start").isFalse();
-        assertThat(p.contains(end.plusNanos(1))).as("one ns after the end").isFalse();
+        assertThat(p.contains(end.minusNanos(1))).as("one ns before the end").isTrue();
         assertThat(p.contains(START.plusSeconds(1))).as("well inside").isTrue();
     }
 
