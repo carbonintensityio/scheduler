@@ -1,6 +1,5 @@
 package io.carbonintensity.scheduler.runtime;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -367,18 +366,14 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         if (strategy.isEmpty()) {
             return;
         }
-        DecisionReason reason = trigger.lastDecisionReason;
-        if (reason == null) {
-            log.warn("Job '{}' fired without a recorded decision reason - skipping its decision-timeline entry",
+        DecisionOutcome outcome = trigger.lastDecisionOutcome;
+        if (outcome == null) {
+            log.warn("Job '{}' fired without a recorded decision outcome - skipping its decision-timeline entry",
                     trigger.getId());
             return;
         }
-        // absent for fallback-driven fires (cron/plain-interval) that never went through a carbon-aware planner
-        // call at all - never fabricated
-        OptionalDouble intensityValue = trigger.lastDecisionIntensityValue.stream().mapToDouble(BigDecimal::doubleValue)
-                .findFirst();
-        DecisionTimelineEntry entry = new DecisionTimelineEntry(scheduledFireTime.toInstant(), strategy.get(), reason,
-                intensityValue);
+        DecisionTimelineEntry entry = new DecisionTimelineEntry(scheduledFireTime.toInstant(), strategy.get(), outcome.reason(),
+                outcome.intensityValue());
         try {
             decisionTimelineStore.record(trigger.getId(), entry);
         } catch (RuntimeException e) {
@@ -511,7 +506,9 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         if (instrumenter != null) {
             invoker = new InstrumentedInvoker(invoker, instrumenter);
         }
-        return invoker;
+        // Outermost: every decorator above logs before delegating down, so MDC must be established before any
+        // of them run, not just inside the innermost one.
+        return new MdcEnrichingInvoker(invoker);
     }
 
     public static SkipPredicate initSkipPredicate(Class<? extends SkipPredicate> predicateClass) {
@@ -634,8 +631,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                         log.debug("Job '{}' fired at {} (greenest available slot honoring its gap window)", getId(),
                                 nextTruncated);
                         lastFireTime = now;
-                        lastDecisionReason = DecisionReason.GREENEST_AVAILABLE_SLOT;
-                        lastDecisionIntensityValue = nextExecution.intensityValue();
+                        lastDecisionOutcome = DecisionOutcome.from(nextExecution, DecisionReason.GREENEST_AVAILABLE_SLOT);
                         return nextTruncated;
                     }
                 }
@@ -695,8 +691,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         private volatile boolean running;
         protected final ZonedDateTime start;
         protected volatile ZonedDateTime lastFireTime;
-        volatile DecisionReason lastDecisionReason;
-        volatile Optional<BigDecimal> lastDecisionIntensityValue = Optional.empty();
+        volatile DecisionOutcome lastDecisionOutcome;
 
         SimpleTrigger(String id, Clock clock, ZonedDateTime start, String description) {
             this.id = id;
@@ -775,7 +770,8 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                     if (now.isAfter(lastTruncated) && (lastFireTime == null || lastFireTime.isBefore(lastTruncated))) {
                         log.debug("Job '{}' fired at {} (fallback to its configured cron schedule)", this.id, lastTruncated);
                         this.lastFireTime = now;
-                        this.lastDecisionReason = DecisionReason.FALLBACK_TO_CONFIGURED_CRON;
+                        this.lastDecisionOutcome = new DecisionOutcome(DecisionReason.FALLBACK_TO_CONFIGURED_CRON,
+                                OptionalDouble.empty());
                         return lastTruncated;
                     }
                 }
@@ -864,8 +860,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                     if (now.isAfter(nextTruncated) && (lastFireTime == null || lastFireTime.isBefore(nextTruncated))) {
                         log.debug("Job '{}' fired at {} (greenest available slot in its window)", this.id, nextTruncated);
                         lastFireTime = now;
-                        lastDecisionReason = DecisionReason.GREENEST_AVAILABLE_SLOT;
-                        lastDecisionIntensityValue = nextExecution.intensityValue();
+                        lastDecisionOutcome = DecisionOutcome.from(nextExecution, DecisionReason.GREENEST_AVAILABLE_SLOT);
                         constraints = DefaultFixedWindowPlanningConstraints.from(constraints)
                                 .withStartAndEnd(constraints.getStart().plusDays(1), constraints.getEnd().plusDays(1))
                                 .build();
@@ -930,7 +925,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
             if (lastFireTime == null) {
                 // First execution
                 lastFireTime = now.truncatedTo(ChronoUnit.SECONDS);
-                lastDecisionReason = DecisionReason.FALLBACK_TO_PLAIN_INTERVAL;
+                lastDecisionOutcome = new DecisionOutcome(DecisionReason.FALLBACK_TO_PLAIN_INTERVAL, OptionalDouble.empty());
                 return now;
             }
             long diff = ChronoUnit.MILLIS.between(lastFireTime, now);
@@ -938,7 +933,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                 ZonedDateTime scheduledFireTime = lastFireTime.plus(Duration.ofMillis(interval));
                 lastFireTime = now.truncatedTo(ChronoUnit.SECONDS);
                 log.debug("Job '{}' fired at {} (fallback to plain interval spacing)", getId(), scheduledFireTime);
-                lastDecisionReason = DecisionReason.FALLBACK_TO_PLAIN_INTERVAL;
+                lastDecisionOutcome = new DecisionOutcome(DecisionReason.FALLBACK_TO_PLAIN_INTERVAL, OptionalDouble.empty());
                 return scheduledFireTime;
             }
             return null;

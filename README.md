@@ -259,9 +259,9 @@ logging.level.io.carbonintensity.scheduler.runtime.SimpleScheduler=DEBUG
 quarkus.log.category."io.carbonintensity.scheduler.runtime.SimpleScheduler".level=DEBUG
 ```
 
-Every log line emitted while a job is running also carries its `identity` in the [SLF4J MDC](https://www.slf4j.org/manual.html#mdc),
-so a logging backend that renders MDC (most JSON/structured formatters do) can filter or group by it without any
-extra configuration.
+Every log line emitted while a job is running also carries its `identity`, `strategy` and `zone` in the
+[SLF4J MDC](https://www.slf4j.org/manual.html#mdc), so a logging backend that renders MDC (most JSON/structured
+formatters do) can filter or group by them without any extra configuration.
 
 Beyond logging, every job's history of fired decisions (when, which strategy, and why) is available programmatically
 as its **decision timeline** - see `DecisionTimelineStore`/`DecisionTimelineEntry` (`io.carbonintensity.scheduler.observability`)
