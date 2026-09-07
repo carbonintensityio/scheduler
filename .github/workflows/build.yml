@@ -93,3 +93,7 @@ jobs:
             **/target/checkstyle-result.xml
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Summarize PMD/Checkstyle/CPD violations
+        if: always()
+        run: python3 .github/scripts/summarize-static-analysis.py "**/target/pmd.xml" "**/target/checkstyle-result.xml" "**/target/cpd.xml" >> "$GITHUB_STEP_SUMMARY"
