@@ -243,14 +243,15 @@
                         <excludeRoot>target/generated-sources</excludeRoot>
                     </excludeRoots>
                     <failOnViolation>false</failOnViolation>
+                    <printFailingErrors>true</printFailingErrors>
                 </configuration>
                 <executions>
                     <execution>
                         <id>pmd-baseline</id>
                         <phase>verify</phase>
                         <goals>
-                            <goal>pmd</goal>
-                            <goal>cpd</goal>
+                            <goal>check</goal>
+                            <goal>cpd-check</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -262,6 +263,7 @@
                     <configLocation>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/checkstyle.xml</configLocation>
                     <propertyExpansion>org.checkstyle.sun.suppressionfilter.config=${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/checkstyle-suppressions.xml</propertyExpansion>
                     <failOnViolation>false</failOnViolation>
+                    <logViolationsToConsole>true</logViolationsToConsole>
                 </configuration>
                 <executions>
                     <execution>
