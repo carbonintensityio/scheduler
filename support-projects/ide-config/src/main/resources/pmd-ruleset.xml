@@ -45,10 +45,10 @@
     </rule>
 
     <!-- Documentation: kept for gs — OSS library, javadoc has value for consumers of the
-         public API. NOTE: "scoped to public API" is NOT implemented here — needs verified
-         package/visibility-based violation suppression syntax we didn't confirm as part
-         of this change, so this applies broadly for now. Left as a follow-up refinement. -->
-    <rule ref="category/java/documentation.xml"/>
+         public API. Scoped to public API only (excludes internal/impl packages): see
+         pmd-documentation-public-api.xml, a separate ruleset file because PMD's
+         exclude-pattern applies per ruleset-file, not per rule. -->
+    <!-- Documentation category: see pmd-documentation-public-api.xml -->
 
     <!-- Error Prone, Multithreading, Performance: keep as-is, low volume / high signal -->
     <rule ref="category/java/errorprone.xml"/>

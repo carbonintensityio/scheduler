@@ -25,9 +25,8 @@
   </module>
 
   <!-- Javadoc & Miscellaneous: kept for gs (OSS library, javadoc has value
-       for consumers). NOTE: "scoped to public API" is NOT implemented here — needs
-       verified package/visibility-based suppression syntax we didn't confirm as part
-       of this change, applies broadly for now. Left as a follow-up refinement. -->
+       for consumers). Scoped to public API only (excludes internal/impl packages) via
+       the SuppressionFilter below, backed by checkstyle-suppressions.xml. -->
   <module name="JavadocPackage"/>
 
   <module name="NewlineAtEndOfFile"/>
@@ -54,7 +53,8 @@
 
   <module name="TreeWalker">
 
-    <!-- Javadoc modules kept for gs -->
+    <!-- Javadoc modules kept for gs; scoped to public API only, see the
+         SuppressionFilter above (checkstyle-suppressions.xml) -->
     <module name="InvalidJavadocPosition"/>
     <module name="JavadocMethod"/>
     <module name="JavadocType"/>

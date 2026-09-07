@@ -237,6 +237,7 @@
                 <configuration>
                     <rulesets>
                         <ruleset>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/pmd-ruleset.xml</ruleset>
+                        <ruleset>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/pmd-documentation-public-api.xml</ruleset>
                     </rulesets>
                     <excludeRoots>
                         <excludeRoot>target/generated-sources</excludeRoot>
@@ -259,6 +260,7 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <configuration>
                     <configLocation>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/checkstyle.xml</configLocation>
+                    <propertyExpansion>org.checkstyle.sun.suppressionfilter.config=${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/checkstyle-suppressions.xml</propertyExpansion>
                     <failOnViolation>false</failOnViolation>
                 </configuration>
                 <executions>
