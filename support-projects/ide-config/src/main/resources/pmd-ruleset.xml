@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<ruleset name="gs-coding-guidelines"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        green-scheduler coding-guidelines PMD ruleset.
+        Category-by-category decisions were recorded internally; this file is
+        the resulting definitive ruleset for this repo.
+    </description>
+
+    <!-- Best Practices: keep as-is, low volume / high signal -->
+    <rule ref="category/java/bestpractices.xml"/>
+
+    <!-- Code Style: mostly disabled — see the sibling ruleset for the same rationale
+         (MethodArgumentCouldBeFinal/LocalVariableCouldBeFinal are pure taste, 1290
+         violations here with no benefit). Only keep UnnecessaryLocalBeforeReturn +
+         naming conventions. -->
+    <rule ref="category/java/codestyle.xml/UnnecessaryLocalBeforeReturn"/>
+    <rule ref="category/java/codestyle.xml/ClassNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/MethodNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/FieldNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/FormalParameterNamingConventions"/>
+    <rule ref="category/java/codestyle.xml/LocalVariableNamingConventions"/>
+
+    <!-- Design: keep, same threshold tuning as the sibling ruleset (shared rationale: exhaustive
+         switch-expression mappers shouldn't trip complexity metrics designed for
+         tangled branching logic). UseObjectForClearerAPI/ExcessiveParameterList on
+         defaults — ties into earlier missing-domain-concept findings (e.g. SchedulerConfigBuilder,
+         ConcurrencySlotTracker parameter groups). -->
+    <rule ref="category/java/design.xml">
+        <exclude name="CyclomaticComplexity"/>
+        <exclude name="NPathComplexity"/>
+    </rule>
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="25"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/NPathComplexity">
+        <properties>
+            <property name="reportLevel" value="500"/>
+        </properties>
+    </rule>
+
+    <!-- Documentation: kept for gs — OSS library, javadoc has value for consumers of the
+         public API. NOTE: "scoped to public API" is NOT implemented here — needs verified
+         package/visibility-based violation suppression syntax we didn't confirm as part
+         of this change, so this applies broadly for now. Left as a follow-up refinement. -->
+    <rule ref="category/java/documentation.xml"/>
+
+    <!-- Error Prone, Multithreading, Performance: keep as-is, low volume / high signal -->
+    <rule ref="category/java/errorprone.xml"/>
+    <rule ref="category/java/multithreading.xml"/>
+    <rule ref="category/java/performance.xml"/>
+
+</ruleset>
