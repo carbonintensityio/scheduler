@@ -61,6 +61,23 @@ being merged.
 [GitHub Pull Request Review Process](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/about-pull-request-reviews)
 is followed for every pull request.
 
+### Pull request descriptions
+
+* Keep it short. A description that takes longer to read than the diff itself has failed at its job.
+* Describe the change functionally - what capability was added or how behavior changed - not as a narrated walkthrough
+  of the diff. A reviewer can already see which types/fields/parameters you touched; they need the *why* and the
+  *what it does now*, not a restatement of the *how*. For example, "introduces `DecisionStrategy` and `DecisionReason`
+  enums to classify how and why a job fired" is useful; enumerating every field of every new type
+  ("`DecisionTimelineEntry` (`fireTime` as `Instant`, `strategy`, `reason`, an absent-able `intensityValue`)") is not -
+  that's what the diff is for.
+* Don't include a section narrating the review process itself (e.g. "fixes from code review", listing findings a
+  reviewer or tool raised along the way). Only the resulting change matters to a reader; how it was found doesn't.
+* Never name the tooling or process (internal or otherwise) used to write, review, or generate the change - describe
+  what changed and why, not how the PR came to exist.
+* If the change is user-facing, add a short "Documentation" section describing what a user needs to know to use it
+  (new config, new behavior, how to enable something) - without linking to wherever that documentation actually lives
+  if that's a separate, non-public place.
+
 ### Coding Guidelines
 
 * We decided to disallow `@author` tags in the Javadoc: they are hard to maintain, especially in a very active project,
