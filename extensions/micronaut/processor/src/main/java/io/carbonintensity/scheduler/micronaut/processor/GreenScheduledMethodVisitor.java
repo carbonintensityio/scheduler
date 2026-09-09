@@ -18,7 +18,7 @@ public class GreenScheduledMethodVisitor implements TypeElementVisitor<Object, O
     private static final String SCHEDULED_EXECUTION = "io.carbonintensity.scheduler.ScheduledExecution";
 
     @Override
-    public final void visitMethod(MethodElement element, VisitorContext context) {
+    public void visitMethod(MethodElement element, VisitorContext context) {
         List<AnnotationValue<GreenScheduled>> schedules = element.getAnnotationValuesByType(GreenScheduled.class);
         if (schedules.isEmpty()) {
             return;
@@ -66,7 +66,7 @@ public class GreenScheduledMethodVisitor implements TypeElementVisitor<Object, O
     }
 
     @Override
-    public final VisitorKind getVisitorKind() {
+    public VisitorKind getVisitorKind() {
         return VisitorKind.ISOLATING;
     }
 }

@@ -27,7 +27,7 @@ public class GreenSchedulerFactory {
 
     @Singleton
     @Requires(missingBeans = SchedulerConfig.class)
-    final SchedulerConfig schedulerConfig(GreenSchedulerConfigurationProperties properties,
+    SchedulerConfig schedulerConfig(GreenSchedulerConfigurationProperties properties,
             @Nullable CarbonIntensityApi carbonIntensityApi) {
         var config = new SchedulerConfig();
         config.setEnabled(properties.isEnabled());
@@ -48,7 +48,7 @@ public class GreenSchedulerFactory {
 
     @Singleton
     @Bean(preDestroy = "close")
-    final SimpleScheduler greenScheduler(SchedulerConfig schedulerConfig) {
+    SimpleScheduler greenScheduler(SchedulerConfig schedulerConfig) {
         logger.info("Creating green scheduler");
         return new SimpleScheduler(schedulerConfig);
     }

@@ -16,7 +16,7 @@ import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 public class SchedulerDevUIProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    final void page(List<ScheduledBusinessMethodItem> scheduledMethods,
+    void page(List<ScheduledBusinessMethodItem> scheduledMethods,
             BuildProducer<CardPageBuildItem> cardPages,
             BuildProducer<FooterPageBuildItem> footerPages) {
 
@@ -36,7 +36,7 @@ public class SchedulerDevUIProcessor {
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    final JsonRPCProvidersBuildItem rpcProvider() {
+    JsonRPCProvidersBuildItem rpcProvider() {
         return new JsonRPCProvidersBuildItem(SchedulerJsonRPCService.class);
     }
 

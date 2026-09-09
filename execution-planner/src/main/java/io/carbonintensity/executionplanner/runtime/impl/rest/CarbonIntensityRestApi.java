@@ -54,7 +54,7 @@ public class CarbonIntensityRestApi implements CarbonIntensityApi {
     }
 
     @Override
-    public final CompletableFuture<CarbonIntensity> getCarbonIntensity(ZonedCarbonIntensityPeriod zonedPeriod) {
+    public CompletableFuture<CarbonIntensity> getCarbonIntensity(ZonedCarbonIntensityPeriod zonedPeriod) {
         if (config.getApiUrl() == null || config.getApiUrl().isEmpty()) {
             return CompletableFuture.failedFuture(new CarbonIntensityApiException("Base url not set."));
         }
@@ -68,7 +68,7 @@ public class CarbonIntensityRestApi implements CarbonIntensityApi {
     }
 
     @Override
-    public final boolean isEnabled() {
+    public boolean isEnabled() {
         return config.isEnabled();
     }
 
@@ -101,7 +101,7 @@ public class CarbonIntensityRestApi implements CarbonIntensityApi {
                 .build();
     }
 
-    public final String getApiName() {
+    public String getApiName() {
         return "CarbonIntensityIO";
     }
 

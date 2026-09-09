@@ -68,65 +68,65 @@ public class SchedulerConfig {
      */
     private int maxConcurrentPerSlot = SchedulerDefaults.DEFAULT_MAX_CONCURRENT_PER_SLOT;
 
-    public final boolean isEnabled() {
+    public boolean isEnabled() {
         return enabled;
     }
 
-    public final void setEnabled(boolean enabled) {
+    public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
-    public final int getJobExecutors() {
+    public int getJobExecutors() {
         return jobExecutors;
     }
 
-    public final void setJobExecutors(int jobExecutors) {
+    public void setJobExecutors(int jobExecutors) {
         if (jobExecutors < 1) {
             throw new IllegalArgumentException("Job executors cannot be less than 1");
         }
         this.jobExecutors = jobExecutors;
     }
 
-    public final int getMaxConcurrentPerSlot() {
+    public int getMaxConcurrentPerSlot() {
         return maxConcurrentPerSlot;
     }
 
-    public final void setMaxConcurrentPerSlot(int maxConcurrentPerSlot) {
+    public void setMaxConcurrentPerSlot(int maxConcurrentPerSlot) {
         if (maxConcurrentPerSlot < 0) {
             throw new IllegalArgumentException("Max concurrent per slot cannot be less than 0");
         }
         this.maxConcurrentPerSlot = maxConcurrentPerSlot;
     }
 
-    public final Duration getOverdueGracePeriod() {
+    public Duration getOverdueGracePeriod() {
         return overdueGracePeriod;
     }
 
-    public final void setOverdueGracePeriod(Duration overdueGracePeriod) {
+    public void setOverdueGracePeriod(Duration overdueGracePeriod) {
         this.overdueGracePeriod = Objects.requireNonNull(overdueGracePeriod, "Overdue grace period cannot be null");
     }
 
-    public final Duration getShutdownGracePeriod() {
+    public Duration getShutdownGracePeriod() {
         return shutdownGracePeriod;
     }
 
-    public final void setShutdownGracePeriod(Duration shutdownGracePeriod) {
+    public void setShutdownGracePeriod(Duration shutdownGracePeriod) {
         this.shutdownGracePeriod = shutdownGracePeriod;
     }
 
-    public final StartMode getStartMode() {
+    public StartMode getStartMode() {
         return startMode;
     }
 
-    public final void setStartMode(StartMode startMode) {
+    public void setStartMode(StartMode startMode) {
         this.startMode = Objects.requireNonNull(startMode, "Start mode cannot be null");
     }
 
-    public final CarbonIntensityApiConfig getCarbonIntensityApiConfig() {
+    public CarbonIntensityApiConfig getCarbonIntensityApiConfig() {
         return carbonIntensityApiConfig;
     }
 
-    public final void setCarbonIntensityApiConfig(CarbonIntensityApiConfig carbonIntensityApiConfig) {
+    public void setCarbonIntensityApiConfig(CarbonIntensityApiConfig carbonIntensityApiConfig) {
         this.carbonIntensityApiConfig = carbonIntensityApiConfig;
     }
 
@@ -153,27 +153,27 @@ public class SchedulerConfig {
         HALTED
     }
 
-    public final CarbonIntensityApi getCarbonIntensityApi() {
+    public CarbonIntensityApi getCarbonIntensityApi() {
         return carbonIntensityApi;
     }
 
-    public final void setCarbonIntensityApi(CarbonIntensityApi carbonIntensityApi) {
+    public void setCarbonIntensityApi(CarbonIntensityApi carbonIntensityApi) {
         this.carbonIntensityApi = carbonIntensityApi;
     }
 
-    public final JobInstrumenter getJobInstrumenter() {
+    public JobInstrumenter getJobInstrumenter() {
         return jobInstrumenter;
     }
 
-    public final void setJobInstrumenter(JobInstrumenter jobInstrumenter) {
+    public void setJobInstrumenter(JobInstrumenter jobInstrumenter) {
         this.jobInstrumenter = jobInstrumenter;
     }
 
-    public final Clock getClock() {
+    public Clock getClock() {
         return clock;
     }
 
-    public final void setClock(Clock clock) {
+    public void setClock(Clock clock) {
         this.clock = clock;
     }
 

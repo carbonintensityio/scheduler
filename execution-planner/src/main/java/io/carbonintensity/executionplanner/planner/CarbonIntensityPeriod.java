@@ -43,7 +43,7 @@ public class CarbonIntensityPeriod implements Comparable<CarbonIntensityPeriod> 
     }
 
     @Override
-    public final boolean equals(Object o) {
+    public boolean equals(Object o) {
         if (this == o)
             return true;
         if (!(o instanceof CarbonIntensityPeriod))
@@ -54,17 +54,17 @@ public class CarbonIntensityPeriod implements Comparable<CarbonIntensityPeriod> 
                 && Objects.equals(resolution(), that.resolution());
     }
 
-    final Duration resolution() {
+    Duration resolution() {
         return resolution;
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return Objects.hash(moment(), value(), resolution());
     }
 
     @Override
-    public final int compareTo(CarbonIntensityPeriod o) {
+    public int compareTo(CarbonIntensityPeriod o) {
         return Comparator.comparing(CarbonIntensityPeriod::moment)
                 .thenComparing(CarbonIntensityPeriod::resolution)
                 .compare(this, o);
@@ -79,12 +79,12 @@ public class CarbonIntensityPeriod implements Comparable<CarbonIntensityPeriod> 
      * boundary instant would be reported as contained by two consecutive periods at once, which would double-count
      * it wherever {@code contains} is used to select overlapping periods (e.g. {@link Timeslot#calculateCarbonIntensity}).
      */
-    public final boolean contains(Instant point) {
+    public boolean contains(Instant point) {
         return point.compareTo(instant) >= 0 && point.isBefore(instant.plus(resolution));
     }
 
     @Override
-    public final String toString() {
+    public String toString() {
         return "CarbonIntensityMoment{" +
                 "moment=" + instant +
                 ", value=" + value +
@@ -92,11 +92,11 @@ public class CarbonIntensityPeriod implements Comparable<CarbonIntensityPeriod> 
                 '}';
     }
 
-    public final Instant moment() {
+    public Instant moment() {
         return instant;
     }
 
-    public final BigDecimal value() {
+    public BigDecimal value() {
         return value;
     }
 

@@ -12,15 +12,15 @@ public class CarbonIntensityApiConfig {
                 && !this.apiUrl.isBlank();
     }
 
-    public final String getApiKey() {
+    public String getApiKey() {
         return apiKey;
     }
 
-    public final String getApiUrl() {
+    public String getApiUrl() {
         return apiUrl;
     }
 
-    public final boolean isEnabled() {
+    public boolean isEnabled() {
         return this.enabled;
     }
 
@@ -28,17 +28,17 @@ public class CarbonIntensityApiConfig {
         private String apiKey;
         private String apiUrl;
 
-        public final Builder apiKey(String apiKey) {
+        public Builder apiKey(String apiKey) {
             this.apiKey = apiKey;
             return this;
         }
 
-        public final Builder apiUrl(String apiUrl) {
+        public Builder apiUrl(String apiUrl) {
             this.apiUrl = apiUrl;
             return this;
         }
 
-        public final CarbonIntensityApiConfig build() {
+        public CarbonIntensityApiConfig build() {
             return new CarbonIntensityApiConfig(this);
         }
     }

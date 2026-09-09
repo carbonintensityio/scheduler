@@ -92,12 +92,12 @@ public class SchedulerProcessor {
     static final String NESTED_SEPARATOR = "$_";
 
     @BuildStep
-    final NativeImageResourceDirectoryBuildItem nativeImageResourceBuildItem() {
+    NativeImageResourceDirectoryBuildItem nativeImageResourceBuildItem() {
         return new NativeImageResourceDirectoryBuildItem("fallback");
     }
 
     @BuildStep
-    final void registerQuarkusSchedulerDisableProperty(BuildProducer<ConfigDescriptionBuildItem> configDescriptions) {
+    void registerQuarkusSchedulerDisableProperty(BuildProducer<ConfigDescriptionBuildItem> configDescriptions) {
         configDescriptions.produce(new ConfigDescriptionBuildItem(
                 "quarkus.scheduler.enabled",
                 "true",
@@ -108,13 +108,13 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    final void beans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    void beans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(new AdditionalBeanBuildItem(QuarkusScheduler.class));
         additionalBeans.produce(new AdditionalBeanBuildItem(SchedulerProducer.class));
     }
 
     @BuildStep
-    final AutoAddScopeBuildItem autoAddScope() {
+    AutoAddScopeBuildItem autoAddScope() {
         // We add @Singleton to any bean class that has no scope annotation and declares at least one non-static method annotated with @GreenScheduled
         return AutoAddScopeBuildItem.builder()
                 .anyMethodMatches(m -> !Modifier.isStatic(m.flags())
@@ -125,7 +125,7 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    final void collectScheduledMethods(BeanArchiveIndexBuildItem beanArchives, BeanDiscoveryFinishedBuildItem beanDiscovery,
+    void collectScheduledMethods(BeanArchiveIndexBuildItem beanArchives, BeanDiscoveryFinishedBuildItem beanDiscovery,
             TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
@@ -200,7 +200,7 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    final void validateScheduledBusinessMethods(List<ScheduledBusinessMethodItem> scheduledMethods,
+    void validateScheduledBusinessMethods(List<ScheduledBusinessMethodItem> scheduledMethods,
             ValidationPhaseBuildItem validationPhase, BuildProducer<ValidationErrorBuildItem> validationErrors,
             BeanArchiveIndexBuildItem beanArchiveIndex) {
         List<Throwable> errors = new ArrayList<>();
@@ -276,7 +276,7 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    public final List<UnremovableBeanBuildItem> unremovableBeans() {
+    public List<UnremovableBeanBuildItem> unremovableBeans() {
         // Beans annotated with @GreenScheduled should never be removed
         return List.of(new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SchedulerDotNames.SCHEDULED_NAME)),
                 new UnremovableBeanBuildItem(new BeanClassAnnotationExclusion(SchedulerDotNames.SCHEDULES_NAME)));
@@ -284,7 +284,7 @@ public class SchedulerProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public final FeatureBuildItem build(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    public FeatureBuildItem build(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             SchedulerRecorder recorder, List<ScheduledBusinessMethodItem> scheduledMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
@@ -538,12 +538,12 @@ public class SchedulerProcessor {
     }
 
     @BuildStep
-    final UnremovableBeanBuildItem unremoveableSkipPredicates() {
+    UnremovableBeanBuildItem unremoveableSkipPredicates() {
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(SchedulerDotNames.SKIP_PREDICATE));
     }
 
     @BuildStep
-    final ReflectiveClassBuildItem reflectiveClasses() {
+    ReflectiveClassBuildItem reflectiveClasses() {
         return ReflectiveClassBuildItem.builder("com.github.benmanes.caffeine.cache.SSA").build();
     }
 }

@@ -16,7 +16,7 @@ import io.carbonintensity.scheduler.runtime.ScheduledMethod;
  */
 public class ScheduledMethodFactory {
 
-    public final ScheduledMethod create(Object bean, Method method) {
+    public ScheduledMethod create(Object bean, Method method) {
         var greenScheduledAnnotationList = getGreenScheduledAnnotations(method);
         var beanClass = AopUtils.getTargetClass(bean);
         var invoker = new MethodScheduledInvoker(bean, method);

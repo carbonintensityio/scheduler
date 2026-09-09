@@ -26,16 +26,16 @@ public class GreenSchedulerBeanInfo {
         this.beanMethod = beanMethod;
     }
 
-    public final Object getBean() {
+    public Object getBean() {
         return bean;
     }
 
-    public final Method getBeanMethod() {
+    public Method getBeanMethod() {
         return beanMethod;
     }
 
     @Override
-    public final boolean equals(Object o) {
+    public boolean equals(Object o) {
         if (this == o)
             return true;
         if (!(o instanceof GreenSchedulerBeanInfo))
@@ -45,7 +45,7 @@ public class GreenSchedulerBeanInfo {
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         return Objects.hash(getBean(), getBeanMethod());
     }
 }

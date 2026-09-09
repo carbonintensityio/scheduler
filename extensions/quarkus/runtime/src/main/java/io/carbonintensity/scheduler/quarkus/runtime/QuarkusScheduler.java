@@ -45,12 +45,12 @@ public class QuarkusScheduler implements AutoCloseable {
 
     @PreDestroy
     @Override
-    public final void close() {
+    public void close() {
         LOG.info("Closing Green Scheduler");
         greenScheduler.close();
     }
 
-    final GreenScheduled lookupConfiguration(GreenScheduled scheduled) {
+    GreenScheduled lookupConfiguration(GreenScheduled scheduled) {
         return new GreenScheduled() {
 
             @Override

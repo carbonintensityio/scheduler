@@ -36,7 +36,7 @@ public class InstrumentedInvoker extends DelegateInvoker {
     }
 
     @Override
-    public final CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
+    public CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
         log.trace("Running instrumented invoker for {} at {}.", execution.getTrigger().getId(),
                 execution.getScheduledFireTime());
         return instrumenter.instrument(new JobInstrumentationContext() {

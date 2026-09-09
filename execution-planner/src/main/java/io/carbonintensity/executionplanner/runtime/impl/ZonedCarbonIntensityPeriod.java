@@ -45,22 +45,22 @@ public class ZonedCarbonIntensityPeriod {
         private ZonedDateTime endTime;
         private String carbonIntensityZone;
 
-        public final Builder withStartTime(ZonedDateTime startTime) {
+        public Builder withStartTime(ZonedDateTime startTime) {
             this.startTime = startTime;
             return this;
         }
 
-        public final Builder withEndTime(ZonedDateTime endTime) {
+        public Builder withEndTime(ZonedDateTime endTime) {
             this.endTime = endTime;
             return this;
         }
 
-        public final Builder withCarbonIntensityZone(String carbonIntensityZone) {
+        public Builder withCarbonIntensityZone(String carbonIntensityZone) {
             this.carbonIntensityZone = carbonIntensityZone;
             return this;
         }
 
-        public final ZonedCarbonIntensityPeriod build() {
+        public ZonedCarbonIntensityPeriod build() {
             Objects.requireNonNull(startTime, "startTime is required");
             Objects.requireNonNull(endTime, "endTime is required");
             Objects.requireNonNull(carbonIntensityZone, "zoneId is required");

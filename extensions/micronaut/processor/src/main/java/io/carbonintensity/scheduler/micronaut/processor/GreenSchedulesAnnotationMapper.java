@@ -16,12 +16,12 @@ import io.micronaut.inject.visitor.VisitorContext;
 public class GreenSchedulesAnnotationMapper implements TypedAnnotationMapper<GreenScheduled.GreenSchedules> {
 
     @Override
-    public final Class<GreenScheduled.GreenSchedules> annotationType() {
+    public Class<GreenScheduled.GreenSchedules> annotationType() {
         return GreenScheduled.GreenSchedules.class;
     }
 
     @Override
-    public final List<AnnotationValue<?>> map(AnnotationValue<GreenScheduled.GreenSchedules> annotation,
+    public List<AnnotationValue<?>> map(AnnotationValue<GreenScheduled.GreenSchedules> annotation,
             VisitorContext visitorContext) {
         return Collections.singletonList(
                 AnnotationValue.builder(GreenScheduledAnnotationMapper.GREEN_SCHEDULED_EXECUTABLE).build());

@@ -55,12 +55,6 @@ public class GreenSchedulerAutoConfiguration {
     @Autowired(required = false)
     private CarbonIntensityApi carbonIntensityApi;
 
-    /*
-     * Not final: proxyBeanMethods defaults to true here, so Spring CGLIB-
-     * subclasses every @Bean method to enforce singleton semantics on
-     * inter-bean calls (see handleContextStart). A final @Bean method
-     * fails context startup.
-     */
     @Bean
     @ConditionalOnMissingBean
     public SchedulerConfig schedulerConfig() {
@@ -71,19 +65,11 @@ public class GreenSchedulerAutoConfiguration {
         return configBuilder.build();
     }
 
-    /*
-     * Not final: see schedulerConfig() above for why @Bean methods here can't
-     * be final.
-     */
     @Bean(name = "green-scheduler")
     public SpringSchedulerFactory springSchedulerFactory() {
         return new SpringSchedulerFactory();
     }
 
-    /*
-     * Not final: see schedulerConfig() above for why @Bean methods here can't
-     * be final.
-     */
     @Bean
     public SchedulerFactory schedulerFactory() {
         return new SimpleSchedulerFactory();
@@ -92,17 +78,13 @@ public class GreenSchedulerAutoConfiguration {
     @Autowired
     GreenSchedulerBeanProcessor greenSchedulerBeanProcessor;
 
-    /*
-     * Not final: see schedulerConfig() above for why @Bean methods here can't
-     * be final.
-     */
     @Bean
     public ScheduledMethodFactory scheduledMethodFactory() {
         return new ScheduledMethodFactory();
     }
 
     @EventListener
-    public final void handleContextStart(ContextRefreshedEvent event) {
+    public void handleContextStart(ContextRefreshedEvent event) {
         var simpleScheduler = (SimpleScheduler) springSchedulerFactory().getObject();
         while (greenSchedulerBeanProcessor.hasNext()) {
             var beanInfo = greenSchedulerBeanProcessor.next();
@@ -113,7 +95,7 @@ public class GreenSchedulerAutoConfiguration {
     }
 
     @PreDestroy
-    public final void closeScheduler() {
+    public void closeScheduler() {
         if (simpleScheduler != null) {
             logger.info("Closing the green scheduler.");
             simpleScheduler.close();

@@ -143,11 +143,11 @@ public class GreenSchedulerProperties {
         return Optional.ofNullable(enabled);
     }
 
-    public final Optional<String> getApiKey() {
+    public Optional<String> getApiKey() {
         return Optional.ofNullable(apiKey);
     }
 
-    public final Optional<String> getApiUrl() {
+    public Optional<String> getApiUrl() {
         return Optional.ofNullable(apiUrl);
     }
 }

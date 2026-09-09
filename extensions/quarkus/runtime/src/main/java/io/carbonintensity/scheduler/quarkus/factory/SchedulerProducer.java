@@ -27,7 +27,7 @@ public class SchedulerProducer {
 
     @Produces
     @DefaultBean
-    public final SchedulerConfig schedulerConfig() {
+    public SchedulerConfig schedulerConfig() {
         var builder = new SchedulerConfigBuilder(greenSchedulerProperties);
         if (!isQuarkusSchedulerEnabled()) {
             builder.disabled();
@@ -44,7 +44,7 @@ public class SchedulerProducer {
 
     @Produces
     @Singleton
-    final SimpleScheduler createScheduler(SchedulerConfig schedulerConfig) {
+    SimpleScheduler createScheduler(SchedulerConfig schedulerConfig) {
         logger.info("Creating green scheduler");
         return new SimpleScheduler(schedulerConfig);
     }

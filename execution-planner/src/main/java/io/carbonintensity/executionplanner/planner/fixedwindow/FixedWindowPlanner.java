@@ -66,12 +66,12 @@ public class FixedWindowPlanner implements CarbonIntensityPlanner<FixedWindowPla
     }
 
     @Override
-    public final boolean canSchedule(FixedWindowPlanningConstraints constraints) {
+    public boolean canSchedule(FixedWindowPlanningConstraints constraints) {
         return constraints != null;
     }
 
     @Override
-    public final ZonedDateTime getNextExecutionTime(FixedWindowPlanningConstraints constraints) {
+    public ZonedDateTime getNextExecutionTime(FixedWindowPlanningConstraints constraints) {
 
         final var period = new ZonedCarbonIntensityPeriod.Builder()
                 .withStartTime(constraints.getStart())

@@ -22,7 +22,7 @@ public class SchedulerContextImpl implements SchedulerContext {
     }
 
     @Override
-    public final List<ScheduledMethod> getScheduledMethods() {
+    public List<ScheduledMethod> getScheduledMethods() {
         return scheduledMethods;
     }
 

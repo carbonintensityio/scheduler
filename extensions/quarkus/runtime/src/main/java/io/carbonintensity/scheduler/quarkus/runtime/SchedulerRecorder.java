@@ -13,11 +13,6 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class SchedulerRecorder {
 
-    /*
-     * Not final: Quarkus recorder methods run behind a bytecode-recording
-     * proxy that must override them; final fails the build with
-     * "cannot be proxied as it is final".
-     */
     public Supplier<Object> createContext(List<MutableScheduledMethod> scheduledMethods) {
         // Defensive design - make an immutable copy of the scheduled method metadata
         List<ScheduledMethod> metadata = immutableCopy(scheduledMethods);

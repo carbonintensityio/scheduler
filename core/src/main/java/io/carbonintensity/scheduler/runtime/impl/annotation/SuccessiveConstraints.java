@@ -17,15 +17,15 @@ public class SuccessiveConstraints {
         this.maximumGap = maximumGap;
     }
 
-    public final Duration getInitialMaximumDelay() {
+    public Duration getInitialMaximumDelay() {
         return initialMaximumDelay;
     }
 
-    public final Duration getMinimumGap() {
+    public Duration getMinimumGap() {
         return minimumGap;
     }
 
-    public final Duration getMaximumGap() {
+    public Duration getMaximumGap() {
         return maximumGap;
     }
 }

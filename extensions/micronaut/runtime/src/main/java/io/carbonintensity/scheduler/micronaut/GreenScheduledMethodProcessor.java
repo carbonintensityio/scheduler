@@ -45,7 +45,7 @@ public class GreenScheduledMethodProcessor implements ExecutableMethodProcessor<
     }
 
     @Override
-    public final void process(BeanDefinition<?> beanDefinition, ExecutableMethod<?, ?> method) {
+    public void process(BeanDefinition<?> beanDefinition, ExecutableMethod<?, ?> method) {
         List<AnnotationValue<GreenScheduled>> annotationValues = method.getAnnotationValuesByType(GreenScheduled.class);
         if (annotationValues.isEmpty()) {
             return;

@@ -13,7 +13,7 @@ public interface SkipPredicate {
      */
     class Never implements SkipPredicate {
         @Override
-        public final boolean test(ScheduledExecution execution) {
+        public boolean test(ScheduledExecution execution) {
             return false;
         }
     }

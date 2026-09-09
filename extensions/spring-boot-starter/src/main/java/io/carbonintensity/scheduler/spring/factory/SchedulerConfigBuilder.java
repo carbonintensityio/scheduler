@@ -59,39 +59,39 @@ public class SchedulerConfigBuilder {
                 .ifPresent(this::apiUrl);
     }
 
-    public final SchedulerConfigBuilder startMode(SchedulerConfig.StartMode startMode) {
+    public SchedulerConfigBuilder startMode(SchedulerConfig.StartMode startMode) {
         Assert.notNull(startMode, "startMode cannot be null");
         this.startMode = startMode;
         return this;
     }
 
-    public final SchedulerConfigBuilder jobExecutorCount(Integer jobExecutors) {
+    public SchedulerConfigBuilder jobExecutorCount(Integer jobExecutors) {
         Assert.notNull(jobExecutors, "jobExecutors cannot be null");
         Assert.isTrue(jobExecutors > 0, "jobExecutors must be greater than 0");
         this.jobExecutorCount = jobExecutors;
         return this;
     }
 
-    public final SchedulerConfigBuilder maxConcurrentPerSlot(Integer maxConcurrentPerSlot) {
+    public SchedulerConfigBuilder maxConcurrentPerSlot(Integer maxConcurrentPerSlot) {
         Assert.notNull(maxConcurrentPerSlot, "maxConcurrentPerSlot cannot be null");
         Assert.isTrue(maxConcurrentPerSlot >= 0, "maxConcurrentPerSlot must be greater than or equal to 0");
         this.maxConcurrentPerSlot = maxConcurrentPerSlot;
         return this;
     }
 
-    public final SchedulerConfigBuilder apiKey(String apiKey) {
+    public SchedulerConfigBuilder apiKey(String apiKey) {
         Assert.hasText(apiKey, "apiKey cannot be null");
         this.apiKey = apiKey;
         return this;
     }
 
-    public final SchedulerConfigBuilder apiUrl(String apiUrl) {
+    public SchedulerConfigBuilder apiUrl(String apiUrl) {
         Assert.hasText(apiUrl, "apiUrl cannot be null");
         this.apiUrl = apiUrl;
         return this;
     }
 
-    public final SchedulerConfigBuilder overdueGracePeriod(Duration overdueGracePeriod) {
+    public SchedulerConfigBuilder overdueGracePeriod(Duration overdueGracePeriod) {
         Assert.notNull(overdueGracePeriod, "overdueGracePeriod cannot be null");
         Assert.isTrue(overdueGracePeriod.toHours() < 24, "overdueGracePeriod must be less than 24 hours");
         Assert.isTrue(overdueGracePeriod.toSeconds() > -1, "overdueGracePeriod must be greater than -1 seconds");
@@ -99,7 +99,7 @@ public class SchedulerConfigBuilder {
         return this;
     }
 
-    public final SchedulerConfigBuilder shutdownGracePeriod(Duration shutdownGracePeriod) {
+    public SchedulerConfigBuilder shutdownGracePeriod(Duration shutdownGracePeriod) {
         Assert.notNull(shutdownGracePeriod, "shutdownGracePeriod cannot be null");
         Assert.isTrue(shutdownGracePeriod.toHours() < 24, "shutdownGracePeriod must be less than 24 hours");
         Assert.isTrue(shutdownGracePeriod.toSeconds() > -1, "shutdownGracePeriod must be greater than -1 seconds");
@@ -107,26 +107,26 @@ public class SchedulerConfigBuilder {
         return this;
     }
 
-    public final SchedulerConfigBuilder enabled(Boolean enabled) {
+    public SchedulerConfigBuilder enabled(Boolean enabled) {
         Assert.notNull(enabled, "enabled cannot be null");
         this.enabled = enabled;
         return this;
     }
 
-    public final SchedulerConfigBuilder enabled() {
+    public SchedulerConfigBuilder enabled() {
         return enabled(true);
     }
 
-    public final SchedulerConfigBuilder disabled() {
+    public SchedulerConfigBuilder disabled() {
         return enabled(false);
     }
 
-    public final SchedulerConfigBuilder carbonIntensityApi(CarbonIntensityApi carbonIntensityApi) {
+    public SchedulerConfigBuilder carbonIntensityApi(CarbonIntensityApi carbonIntensityApi) {
         this.carbonIntensityApi = carbonIntensityApi;
         return this;
     }
 
-    public final SchedulerConfig build() {
+    public SchedulerConfig build() {
         var schedulerConfig = new SchedulerConfig();
         schedulerConfig.setEnabled(enabled);
         schedulerConfig.setStartMode(startMode);
