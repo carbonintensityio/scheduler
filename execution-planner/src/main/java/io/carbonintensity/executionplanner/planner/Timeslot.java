@@ -79,17 +79,15 @@ public class Timeslot {
      */
     public static Optional<BigDecimal> calculateCarbonIntensity(List<CarbonIntensityPeriod> carbonIntensityInstants,
             ZonedDateTime start, ZonedDateTime end) {
-        List<CarbonIntensityPeriod> overlapping = carbonIntensityInstants.stream()
-                .filter(m -> m.contains(start.toInstant()) || m.contains(end.toInstant()))
-                .toList();
-        if (overlapping.isEmpty()) {
-            return Optional.empty();
-        }
         BigDecimal sum = BigDecimal.ZERO;
-        for (CarbonIntensityPeriod ci : overlapping) {
-            sum = sum.add(calculateCarbonIntensity(start, end, ci));
+        boolean found = false;
+        for (CarbonIntensityPeriod ci : carbonIntensityInstants) {
+            if (ci.contains(start.toInstant()) || ci.contains(end.toInstant())) {
+                sum = sum.add(calculateCarbonIntensity(start, end, ci));
+                found = true;
+            }
         }
-        return Optional.of(sum);
+        return found ? Optional.of(sum) : Optional.empty();
     }
 
     private static BigDecimal calculateCarbonIntensity(ZonedDateTime start, ZonedDateTime end, CarbonIntensityPeriod ci) {

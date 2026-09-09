@@ -342,9 +342,9 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         log.trace("Check triggers at {}", now);
         for (ScheduledTask task : scheduledTasks.values()) {
             try {
-                ZonedDateTime scheduledFireTime = task.execute(now, jobExecutor);
-                if (scheduledFireTime != null) {
-                    recordDecision(task.trigger, scheduledFireTime);
+                EvaluationResult result = task.execute(now, jobExecutor);
+                if (result != null) {
+                    recordDecision(task.trigger, result);
                 }
             } catch (Exception e) {
                 log.warn("Unexpected exception while executing trigger for {}", task.trigger.getMethodDescription(), e);
@@ -356,23 +356,17 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
      * Records a {@link DecisionTimelineEntry} for a real trigger fire, unconditionally - no {@code @GreenObserved}
      * opt-in required, since this is the "is this a black box" baseline the decision timeline exists for.
      * <p>
-     * {@link Trigger#getDecisionStrategy()} defaults to {@link Optional#empty()}, only overridden by
-     * {@link FixedWindowTrigger} and {@link SuccessiveTrigger} - any other trigger type (an internal,
-     * non-adopter-facing trigger with no "green" decision to explain) is silently excluded from the decision
-     * timeline by simply never overriding it.
+     * {@link Trigger#getDecisionStrategy()} defaults to {@code null}, only overridden by {@link FixedWindowTrigger}
+     * and {@link SuccessiveTrigger} - any other trigger type (an internal, non-adopter-facing trigger with no
+     * "green" decision to explain) is silently excluded from the decision timeline by simply never overriding it.
      */
-    private void recordDecision(SimpleTrigger trigger, ZonedDateTime scheduledFireTime) {
-        Optional<DecisionStrategy> strategy = trigger.getDecisionStrategy();
-        if (strategy.isEmpty()) {
+    private void recordDecision(SimpleTrigger trigger, EvaluationResult result) {
+        DecisionStrategy strategy = trigger.getDecisionStrategy();
+        if (strategy == null) {
             return;
         }
-        DecisionOutcome outcome = trigger.lastDecisionOutcome;
-        if (outcome == null) {
-            log.warn("Job '{}' fired without a recorded decision outcome - skipping its decision-timeline entry",
-                    trigger.getId());
-            return;
-        }
-        DecisionTimelineEntry entry = new DecisionTimelineEntry(scheduledFireTime.toInstant(), strategy.get(), outcome.reason(),
+        DecisionOutcome outcome = result.outcome();
+        DecisionTimelineEntry entry = new DecisionTimelineEntry(result.fireTime().toInstant(), strategy, outcome.reason(),
                 outcome.intensityValue());
         try {
             decisionTimelineStore.record(trigger.getId(), entry);
@@ -526,6 +520,14 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
     }
 
+    /**
+     * A trigger's decision, bundled with the fire time it applies to - the two are always produced together by
+     * {@link SimpleTrigger#evaluate}, so they travel together rather than the outcome being smuggled out via a
+     * mutable field on the trigger for {@link #recordDecision} to re-read moments later.
+     */
+    record EvaluationResult(ZonedDateTime fireTime, DecisionOutcome outcome) {
+    }
+
     static class ScheduledTask {
 
         final boolean isProgrammatic;
@@ -538,17 +540,17 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
             this.isProgrammatic = isProgrammatic;
         }
 
-        ZonedDateTime execute(ZonedDateTime now, ExecutorService executorService) {
+        EvaluationResult execute(ZonedDateTime now, ExecutorService executorService) {
             if (trigger.isPaused()) {
                 return null;
             }
 
             // evaluate if we need to fire
-            ZonedDateTime scheduledFireTime = trigger.evaluate(now);
-            if (scheduledFireTime != null) {
-                executorService.execute(() -> doInvoke(now, scheduledFireTime));
+            EvaluationResult result = trigger.evaluate(now);
+            if (result != null) {
+                executorService.execute(() -> doInvoke(now, result.fireTime()));
             }
-            return scheduledFireTime;
+            return result;
         }
 
         void doInvoke(ZonedDateTime now, ZonedDateTime scheduledFireTime) {
@@ -604,7 +606,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
 
         @Override
-        ZonedDateTime evaluate(ZonedDateTime now) {
+        EvaluationResult evaluate(ZonedDateTime now) {
             if (successivePlanner.canSchedule(constraints)) {
                 if (now.isBefore(start)) {
                     return null;
@@ -631,8 +633,8 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                         log.debug("Job '{}' fired at {} (greenest available slot honoring its gap window)", getId(),
                                 nextTruncated);
                         lastFireTime = now;
-                        lastDecisionOutcome = DecisionOutcome.from(nextExecution, DecisionReason.GREENEST_AVAILABLE_SLOT);
-                        return nextTruncated;
+                        DecisionOutcome outcome = DecisionOutcome.from(nextExecution, DecisionReason.GREENEST_AVAILABLE_SLOT);
+                        return new EvaluationResult(nextTruncated, outcome);
                     }
                 }
                 return null;
@@ -656,8 +658,8 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
 
         @Override
-        public Optional<DecisionStrategy> getDecisionStrategy() {
-            return Optional.of(DecisionStrategy.SUCCESSIVE);
+        public DecisionStrategy getDecisionStrategy() {
+            return DecisionStrategy.SUCCESSIVE;
         }
 
         @Override
@@ -691,7 +693,6 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         private volatile boolean running;
         protected final ZonedDateTime start;
         protected volatile ZonedDateTime lastFireTime;
-        volatile DecisionOutcome lastDecisionOutcome;
 
         SimpleTrigger(String id, Clock clock, ZonedDateTime start, String description) {
             this.id = id;
@@ -705,7 +706,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
          * @param now The current date-time in the default time carbonIntensityZone
          * @return the scheduled time if fired, {@code null} otherwise
          */
-        abstract ZonedDateTime evaluate(ZonedDateTime now);
+        abstract EvaluationResult evaluate(ZonedDateTime now);
 
         @Override
         public Instant getPreviousFireTime() {
@@ -759,7 +760,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                     .orElse(null);
         }
 
-        ZonedDateTime evaluate(ZonedDateTime now) {
+        EvaluationResult evaluate(ZonedDateTime now) {
             if (now.isBefore(this.start)) {
                 return null;
             } else {
@@ -770,9 +771,9 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                     if (now.isAfter(lastTruncated) && (lastFireTime == null || lastFireTime.isBefore(lastTruncated))) {
                         log.debug("Job '{}' fired at {} (fallback to its configured cron schedule)", this.id, lastTruncated);
                         this.lastFireTime = now;
-                        this.lastDecisionOutcome = new DecisionOutcome(DecisionReason.FALLBACK_TO_CONFIGURED_CRON,
+                        DecisionOutcome outcome = new DecisionOutcome(DecisionReason.FALLBACK_TO_CONFIGURED_CRON,
                                 OptionalDouble.empty());
-                        return lastTruncated;
+                        return new EvaluationResult(lastTruncated, outcome);
                     }
                 }
 
@@ -841,7 +842,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
 
         @Override
-        ZonedDateTime evaluate(ZonedDateTime now) {
+        EvaluationResult evaluate(ZonedDateTime now) {
             if (!planner.canSchedule(constraints)) {
                 // fallback to cron trigger
                 return super.evaluate(now);
@@ -860,11 +861,11 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
                     if (now.isAfter(nextTruncated) && (lastFireTime == null || lastFireTime.isBefore(nextTruncated))) {
                         log.debug("Job '{}' fired at {} (greenest available slot in its window)", this.id, nextTruncated);
                         lastFireTime = now;
-                        lastDecisionOutcome = DecisionOutcome.from(nextExecution, DecisionReason.GREENEST_AVAILABLE_SLOT);
+                        DecisionOutcome outcome = DecisionOutcome.from(nextExecution, DecisionReason.GREENEST_AVAILABLE_SLOT);
                         constraints = DefaultFixedWindowPlanningConstraints.from(constraints)
                                 .withStartAndEnd(constraints.getStart().plusDays(1), constraints.getEnd().plusDays(1))
                                 .build();
-                        return nextExecution.fireTime();
+                        return new EvaluationResult(nextExecution.fireTime(), outcome);
                     }
                 }
             }
@@ -878,8 +879,8 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
 
         @Override
-        public Optional<DecisionStrategy> getDecisionStrategy() {
-            return Optional.of(DecisionStrategy.FIXED_WINDOW);
+        public DecisionStrategy getDecisionStrategy() {
+            return DecisionStrategy.FIXED_WINDOW;
         }
 
         @Override
@@ -918,23 +919,22 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
 
         @Override
-        ZonedDateTime evaluate(ZonedDateTime now) {
+        EvaluationResult evaluate(ZonedDateTime now) {
             if (now.isBefore(start)) {
                 return null;
             }
+            DecisionOutcome outcome = new DecisionOutcome(DecisionReason.FALLBACK_TO_PLAIN_INTERVAL, OptionalDouble.empty());
             if (lastFireTime == null) {
                 // First execution
                 lastFireTime = now.truncatedTo(ChronoUnit.SECONDS);
-                lastDecisionOutcome = new DecisionOutcome(DecisionReason.FALLBACK_TO_PLAIN_INTERVAL, OptionalDouble.empty());
-                return now;
+                return new EvaluationResult(now, outcome);
             }
             long diff = ChronoUnit.MILLIS.between(lastFireTime, now);
             if (diff >= interval) {
                 ZonedDateTime scheduledFireTime = lastFireTime.plus(Duration.ofMillis(interval));
                 lastFireTime = now.truncatedTo(ChronoUnit.SECONDS);
                 log.debug("Job '{}' fired at {} (fallback to plain interval spacing)", getId(), scheduledFireTime);
-                lastDecisionOutcome = new DecisionOutcome(DecisionReason.FALLBACK_TO_PLAIN_INTERVAL, OptionalDouble.empty());
-                return scheduledFireTime;
+                return new EvaluationResult(scheduledFireTime, outcome);
             }
             return null;
         }

@@ -60,7 +60,8 @@ public final class InMemoryDecisionTimelineStore implements DecisionTimelineStor
      * at their sorted position rather than always appended - age-based eviction only ever inspects the front of the
      * list, and that is only correct if the front is always the true oldest entry, regardless of arrival order.
      * {@link SimpleScheduler} itself only ever calls {@code record} in fireTime order, so this is belt-and-braces
-     * for a default implementation sitting behind a pluggable SPI, not a fix for an observed problem.
+     * for a default implementation sitting behind a pluggable SPI, not a fix for an observed problem - see
+     * {@code staysCorrectWhenEntriesArriveOutOfOrder} for the guarantee this preserves.
      */
     private static final class Timeline {
 

@@ -227,7 +227,7 @@ class DecisionTimelineWiringTest {
         SimpleScheduler.SimpleTrigger noStrategyTrigger = new SimpleScheduler.SimpleTrigger("no-strategy",
                 Clock.systemUTC(), ZonedDateTime.now(), "test") {
             @Override
-            ZonedDateTime evaluate(ZonedDateTime now) {
+            SimpleScheduler.EvaluationResult evaluate(ZonedDateTime now) {
                 return null;
             }
 
@@ -242,7 +242,7 @@ class DecisionTimelineWiringTest {
             }
         };
 
-        assertThat(noStrategyTrigger.getDecisionStrategy()).isEmpty();
+        assertThat(noStrategyTrigger.getDecisionStrategy()).isNull();
     }
 
     private ScheduledInvoker noopInvoker() {

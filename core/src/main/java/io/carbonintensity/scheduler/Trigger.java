@@ -1,7 +1,6 @@
 package io.carbonintensity.scheduler;
 
 import java.time.Instant;
-import java.util.Optional;
 
 import io.carbonintensity.scheduler.observability.DecisionStrategy;
 
@@ -55,12 +54,11 @@ public interface Trigger {
     }
 
     /**
-     * @return the top-level {@link DecisionStrategy} this trigger is configured with, or {@link Optional#empty()}
-     *         for a trigger that makes no carbon-aware decision of its own (e.g. an internal, non-adopter-facing
-     *         trigger)
+     * @return the top-level {@link DecisionStrategy} this trigger is configured with, or {@code null} for a
+     *         trigger that makes no carbon-aware decision of its own (e.g. an internal, non-adopter-facing trigger)
      */
-    default Optional<DecisionStrategy> getDecisionStrategy() {
-        return Optional.empty();
+    default DecisionStrategy getDecisionStrategy() {
+        return null;
     }
 
     /**
