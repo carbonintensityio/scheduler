@@ -79,12 +79,18 @@
          MissingSerialVersionUID: exceptions here are never serialized.
          AvoidFieldNameMatchingMethodName: false positive on the enum id()
          accessor pattern repeated across several enums.
-         EmptyCatchBlock/AvoidDuplicateLiterals re-added with tuned properties. -->
+         EmptyCatchBlock/AvoidDuplicateLiterals re-added with tuned properties.
+         AvoidLiteralsInIfCondition: dropped entirely, same reasoning as Checkstyle's
+         MagicNumber (also dropped) - low volume either way, but the ongoing maintenance
+         cost of a "which numbers are obvious" ignore-list outweighs the value; several
+         remaining violations were style artifacts (e.g. `x.compareTo(y) >= 1`, equivalent
+         to the already-ignored `> 0`) rather than real hygiene issues. -->
     <rule ref="category/java/errorprone.xml">
         <exclude name="MissingSerialVersionUID"/>
         <exclude name="AvoidFieldNameMatchingMethodName"/>
         <exclude name="EmptyCatchBlock"/>
         <exclude name="AvoidDuplicateLiterals"/>
+        <exclude name="AvoidLiteralsInIfCondition"/>
     </rule>
     <rule ref="category/java/errorprone.xml/EmptyCatchBlock">
         <properties>

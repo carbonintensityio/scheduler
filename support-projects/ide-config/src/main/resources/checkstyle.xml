@@ -129,12 +129,10 @@
     </module>
     <module name="IllegalInstantiation"/>
     <module name="InnerAssignment"/>
-    <!-- ignoreNumbers extended with a few self-explanatory-in-context values found in our
-         own violations (24 hours, 60 min/sec, 100, 200 HTTP-OK, 1000 ms) - team decision
-         after review, on top of the check's own defaults (-1, 0, 1, 2). -->
-    <module name="MagicNumber">
-      <property name="ignoreNumbers" value="-1, 0, 1, 2, 24, 60, 100, 200, 1000"/>
-    </module>
+    <!-- MagicNumber dropped entirely: team decision after review. Low volume either way,
+         but the ongoing maintenance cost of a "which numbers are obvious" ignore-list
+         outweighs the value here - PMD's parallel AvoidLiteralsInIfCondition was dropped
+         for the same reason. -->
     <module name="MissingSwitchDefault"/>
     <module name="MultipleVariableDeclarations"/>
     <module name="SimplifyBooleanExpression"/>
