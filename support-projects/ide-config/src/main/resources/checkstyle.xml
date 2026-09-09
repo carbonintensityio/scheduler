@@ -1,0 +1,173 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+          "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+          "https://checkstyle.org/dtds/configuration_1_3.dtd">
+
+<!--
+  green-scheduler coding-guidelines Checkstyle config.
+  Derived from Checkstyle's bundled sun_checks.xml. Category-by-category decisions
+  recorded internally; this file is the resulting definitive
+  deliverable for this repo. Diffs from sun_checks.xml are marked inline below.
+-->
+
+<module name="Checker">
+  <property name="severity" value="error"/>
+  <property name="fileExtensions" value="java, properties, xml"/>
+
+  <module name="BeforeExecutionExclusionFileFilter">
+    <property name="fileNamePattern" value="module\-info\.java$"/>
+  </module>
+
+  <module name="SuppressionFilter">
+    <property name="file" value="${org.checkstyle.sun.suppressionfilter.config}"
+              default="checkstyle-suppressions.xml" />
+    <property name="optional" value="true"/>
+  </module>
+
+  <!-- Javadoc & Miscellaneous: kept for gs (OSS library, javadoc has value
+       for consumers). Scoped to public API only (excludes internal/impl packages) via
+       the SuppressionFilter below, backed by checkstyle-suppressions.xml. -->
+  <module name="JavadocPackage"/>
+
+  <module name="NewlineAtEndOfFile"/>
+  <module name="Translation"/>
+
+  <!-- Size Violations: kept, LineLength tuned to match the shared Eclipse
+       formatter (ide-config/eclipse-format.xml, lineSplit=128) instead of sun_checks'
+       80-column default — same conflict confirmed in ciio applies here too, both
+       repos share the identical formatter profile. -->
+  <module name="FileLength"/>
+  <module name="LineLength">
+    <property name="fileExtensions" value="java"/>
+    <property name="max" value="128"/>
+  </module>
+
+  <module name="FileTabCharacter"/>
+
+  <module name="RegexpSingleline">
+    <property name="format" value="\s+$"/>
+    <property name="minimum" value="0"/>
+    <property name="maximum" value="0"/>
+    <property name="message" value="Line has trailing spaces."/>
+  </module>
+
+  <module name="TreeWalker">
+
+    <!-- Javadoc modules kept for gs; scoped to public API only, see the
+         SuppressionFilter above (checkstyle-suppressions.xml) -->
+    <module name="InvalidJavadocPosition"/>
+    <module name="JavadocMethod"/>
+    <module name="JavadocType"/>
+    <module name="JavadocVariable"/>
+    <module name="JavadocStyle"/>
+    <module name="MissingJavadocMethod"/>
+
+    <!-- Naming Conventions: kept as-is. ConstantName's default pattern
+         (^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$) doesn't allow the conventional
+         lowercase `log`/`logger` field name for a private static final
+         Logger, so the pattern is extended (not replaced) to also accept it. -->
+    <module name="ConstantName">
+      <property name="format" value="^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$|^log(ger)?$"/>
+    </module>
+    <module name="LocalFinalVariableName"/>
+    <module name="LocalVariableName"/>
+    <module name="MemberName"/>
+    <module name="MethodName"/>
+    <module name="PackageName"/>
+    <module name="ParameterName"/>
+    <module name="StaticVariableName"/>
+    <module name="TypeName"/>
+
+    <!-- Imports: kept as-is. sun_checks has no import-order check, so no
+         conflict with the formatter-enforced grouping (java, javax, jakarta, org, com,
+         enforced here by impsort-maven-plugin). -->
+    <module name="AvoidStarImport"/>
+    <module name="IllegalImport"/>
+    <module name="RedundantImport"/>
+    <module name="UnusedImports">
+      <property name="processJavadoc" value="false"/>
+    </module>
+
+    <!-- Size Violations: MethodLength/ParameterNumber kept on defaults -->
+    <module name="MethodLength"/>
+    <module name="ParameterNumber"/>
+
+    <!-- Whitespace: kept as-is, no formatter conflict -->
+    <module name="EmptyForIteratorPad"/>
+    <module name="GenericWhitespace"/>
+    <module name="MethodParamPad"/>
+    <module name="NoWhitespaceAfter"/>
+    <module name="NoWhitespaceBefore"/>
+    <module name="OperatorWrap"/>
+    <module name="ParenPad"/>
+    <module name="TypecastParenPad"/>
+    <module name="WhitespaceAfter"/>
+    <module name="WhitespaceAround"/>
+
+    <!-- Modifiers: kept as-is -->
+    <module name="ModifierOrder"/>
+    <module name="RedundantModifier"/>
+
+    <!-- Blocks: kept as-is, braces are end_of_line/K&R in the shared
+         formatter, matches LeftCurly's default (eol) -->
+    <module name="AvoidNestedBlocks"/>
+    <module name="EmptyBlock"/>
+    <module name="LeftCurly"/>
+    <module name="NeedBraces"/>
+    <module name="RightCurly"/>
+
+    <!-- Coding: EqualsHashCode and EmptyStatement removed: they overlap with
+         PMD Error-Prone (OverrideBothEqualsAndHashcode / EmptyStatementNotInLoop), and
+         PMD is the designated lead for that overlap. Rest kept as-is. -->
+    <!-- HiddenField: the biggest single source of violations here (195), almost
+         all the standard setter/constructor-parameter idiom
+         (this.field = field). Not disabled outright - still flags accidental
+         shadowing elsewhere. -->
+    <module name="HiddenField">
+      <property name="ignoreSetter" value="true"/>
+      <property name="ignoreConstructorParameter" value="true"/>
+    </module>
+    <module name="IllegalInstantiation"/>
+    <module name="InnerAssignment"/>
+    <!-- MagicNumber dropped entirely: team decision after review. Low volume either way,
+         but the ongoing maintenance cost of a "which numbers are obvious" ignore-list
+         outweighs the value here - PMD's parallel AvoidLiteralsInIfCondition was dropped
+         for the same reason. -->
+    <module name="MissingSwitchDefault"/>
+    <module name="MultipleVariableDeclarations"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+
+    <!-- Class Design: DesignForExtension kept for gs (OSS library,
+         extension contract matters). Compare with ciio's config, which removes it. -->
+    <module name="DesignForExtension"/>
+    <module name="FinalClass"/>
+    <module name="HideUtilityClassConstructor"/>
+    <module name="InterfaceIsType"/>
+    <!-- packageAllowed=true: team decision after review. Default flags package-private
+         fields too, which caught an idiomatic, intentional pattern here rather than a
+         real problem: fields a class shares with its same-package subclass (e.g.
+         AbstractJobDefinition/SimpleJobDefinition). Stays active against real
+         public/protected mutable fields. -->
+    <module name="VisibilityModifier">
+      <property name="packageAllowed" value="true"/>
+    </module>
+
+    <!-- Miscellaneous: kept for gs -->
+    <module name="ArrayTypeStyle"/>
+    <module name="TodoComment"/>
+    <module name="UpperEll"/>
+    <!-- FinalParameters excluded on purpose: a blanket "parameters must be final" rule
+         is explicitly out of scope, same reasoning as PMD's already-disabled
+         MethodArgumentCouldBeFinal/LocalVariableCouldBeFinal: matter of taste, no
+         correctness/readability benefit, not enforced anywhere in this project. -->
+
+    <module name="SuppressionXpathFilter">
+      <property name="file" value="${org.checkstyle.sun.suppressionxpathfilter.config}"
+                default="checkstyle-xpath-suppressions.xml" />
+      <property name="optional" value="true"/>
+    </module>
+
+  </module>
+
+</module>

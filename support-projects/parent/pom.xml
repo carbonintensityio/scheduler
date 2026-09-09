@@ -22,6 +22,7 @@
         <version.archetype.plugin>3.4.1</version.archetype.plugin>
         <version.buildhelper.plugin>3.6.1</version.buildhelper.plugin>
         <version.buildnumber.plugin>3.3.0</version.buildnumber.plugin>
+        <version.checkstyle.plugin>3.6.0</version.checkstyle.plugin>
         <version.clean.plugin>3.5.0</version.clean.plugin>
         <version.compiler.plugin>3.15.0</version.compiler.plugin>
         <version.deploy.plugin>3.1.4</version.deploy.plugin>
@@ -34,6 +35,7 @@
         <version.javadoc.plugin>3.12.0</version.javadoc.plugin>
         <version.jar.plugin>3.5.1</version.jar.plugin>
         <version.nexus-staging.plugin>1.6.13</version.nexus-staging.plugin>
+        <version.pmd.plugin>3.26.0</version.pmd.plugin>
         <version.release.plugin>3.0.0</version.release.plugin>
         <version.resources.plugin>3.5.0</version.resources.plugin>
         <version.shade.plugin>3.6.2</version.shade.plugin>
@@ -208,6 +210,71 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
             </plugin>
+
+            <!--
+            Definitive per-category PMD/CPD/Checkstyle configuration. Rulesets/config live in
+            scheduler-ide-config (support-projects/ide-config/src/main/resources).
+
+            Classpath resolution via a <dependencies> entry on these plugins (the same pattern
+            formatter-maven-plugin already uses for eclipse-format.xml) was tried first, but it
+            makes green-scheduler-parent's OWN build (this plugin binding is inherited by every
+            module, this pom's packaging=pom module included) depend on the scheduler-ide-config
+            artifact, while scheduler-ide-config's <parent> points back at this pom - Maven
+            rejects that outright as a reactor cycle ("The projects in the reactor contain a
+            cyclic reference"), before a single mojo even runs. Falling back (as anticipated by
+            to a path relative to the multi-module root, which carries no such dependency
+            edge.
+
+            failOnViolation stays false for both (non-blocking; gating is a separate, not-yet-
+            taken decision) and generated sources are excluded to keep noise down, matching the
+            findings from the sibling repo's baseline measurement. CPD's token threshold is left
+            on the default (100) for now.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <rulesets>
+                        <ruleset>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/pmd-ruleset.xml</ruleset>
+                        <ruleset>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/pmd-documentation-public-api.xml</ruleset>
+                        <ruleset>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/pmd-complexity.xml</ruleset>
+                    </rulesets>
+                    <excludeRoots>
+                        <excludeRoot>target/generated-sources</excludeRoot>
+                    </excludeRoots>
+                    <failOnViolation>false</failOnViolation>
+                    <printFailingErrors>true</printFailingErrors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>pmd-baseline</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                            <goal>cpd-check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <configuration>
+                    <configLocation>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/checkstyle.xml</configLocation>
+                    <propertyExpansion>org.checkstyle.sun.suppressionfilter.config=${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/checkstyle-suppressions.xml</propertyExpansion>
+                    <failOnViolation>false</failOnViolation>
+                    <logViolationsToConsole>true</logViolationsToConsole>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>checkstyle-baseline</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
         <pluginManagement>
             <plugins>
@@ -243,8 +310,18 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-checkstyle-plugin</artifactId>
+                    <version>${version.checkstyle.plugin}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-clean-plugin</artifactId>
                     <version>${version.clean.plugin}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>${version.pmd.plugin}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

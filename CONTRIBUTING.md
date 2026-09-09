@@ -134,6 +134,26 @@ of your fork with `main` of this repo (e.g. monthly).
 A merge to `main` also triggers a full build, not just pull requests, so you can expect `main` to always reflect an
 actually-verified state.
 
+### Static analysis (PMD/Checkstyle/CPD)
+
+Every build also runs PMD, Checkstyle and CPD (duplication detection), each tuned per rule category against
+measured impact on this codebase rather than applied wholesale from a generic template. This currently only
+reports - it never fails a build - so a violation isn't a blocker.
+
+To see the results:
+
+- **In CI**: the `build` job's step summary (visible on the workflow run page, no download needed) shows a
+  violation-count overview; the full XML reports (one set per module) are attached as the
+  `pmd-checkstyle-reports` artifact.
+- **Locally, as a browsable HTML report**:
+  ```shell
+  ./mvnw pmd:pmd pmd:cpd checkstyle:checkstyle
+  ```
+  then open `target/reports/{pmd,cpd,checkstyle}.html` per module.
+- **In your IDE**: point your PMD/Checkstyle IDE plugin at
+  `support-projects/ide-config/src/main/resources/{pmd-ruleset,checkstyle}.xml` for live in-editor feedback
+  matching CI exactly.
+
 ### Compatibility testing
 
 Next to the regular build, every PR also runs a `Compatibility (PR)` workflow. It builds the
