@@ -10,8 +10,19 @@
         the resulting definitive ruleset for this repo.
     </description>
 
-    <!-- Best Practices: keep as-is, low volume / high signal -->
-    <rule ref="category/java/bestpractices.xml"/>
+    <!-- Best Practices: keep as-is, low volume / high signal. GuardLogStatement
+         excluded from the broad reference and re-added below with logLevels
+         restricted to trace/debug (info/warn/error call sites here are not
+         performance-sensitive enough to warrant a guard). -->
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="GuardLogStatement"/>
+    </rule>
+    <rule ref="category/java/bestpractices.xml/GuardLogStatement">
+        <properties>
+            <property name="logLevels" value="trace,debug"/>
+            <property name="guardsMethods" value="isTraceEnabled,isDebugEnabled"/>
+        </properties>
+    </rule>
 
     <!-- Code Style: mostly disabled — see the sibling ruleset for the same rationale
          (MethodArgumentCouldBeFinal/LocalVariableCouldBeFinal are pure taste, 1290
@@ -28,19 +39,22 @@
          switch-expression mappers shouldn't trip complexity metrics designed for
          tangled branching logic). UseObjectForClearerAPI/ExcessiveParameterList on
          defaults — ties into earlier missing-domain-concept findings (e.g. SchedulerConfigBuilder,
-         ConcurrencySlotTracker parameter groups). -->
+         ConcurrencySlotTracker parameter groups).
+         CyclomaticComplexity/NPathComplexity live in the sibling pmd-complexity.xml
+         instead (they need a deployment/codegen exclude-pattern, which PMD only
+         applies per ruleset-file) — excluded here too so the broad reference
+         doesn't double up on them.
+         AvoidDeeplyNestedIfStmts excluded from the broad reference and re-added
+         below with a relaxed problemDepth: the default (3) flags routine,
+         readable early-return validation chains. -->
     <rule ref="category/java/design.xml">
         <exclude name="CyclomaticComplexity"/>
         <exclude name="NPathComplexity"/>
+        <exclude name="AvoidDeeplyNestedIfStmts"/>
     </rule>
-    <rule ref="category/java/design.xml/CyclomaticComplexity">
+    <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
         <properties>
-            <property name="methodReportLevel" value="25"/>
-        </properties>
-    </rule>
-    <rule ref="category/java/design.xml/NPathComplexity">
-        <properties>
-            <property name="reportLevel" value="500"/>
+            <property name="problemDepth" value="5"/>
         </properties>
     </rule>
 
@@ -50,9 +64,45 @@
          exclude-pattern applies per ruleset-file, not per rule. -->
     <!-- Documentation category: see pmd-documentation-public-api.xml -->
 
-    <!-- Error Prone, Multithreading, Performance: keep as-is, low volume / high signal -->
-    <rule ref="category/java/errorprone.xml"/>
-    <rule ref="category/java/multithreading.xml"/>
+    <!-- Error Prone: keep, minus a handful of rules excluded below with rationale.
+         MissingSerialVersionUID: exceptions here are never serialized.
+         AvoidFieldNameMatchingMethodName: false positive on the enum id()
+         accessor pattern repeated across several enums.
+         EmptyCatchBlock/AvoidDuplicateLiterals re-added with tuned properties. -->
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="MissingSerialVersionUID"/>
+        <exclude name="AvoidFieldNameMatchingMethodName"/>
+        <exclude name="EmptyCatchBlock"/>
+        <exclude name="AvoidDuplicateLiterals"/>
+    </rule>
+    <rule ref="category/java/errorprone.xml/EmptyCatchBlock">
+        <properties>
+            <property name="allowCommentedBlocks" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
+        <properties>
+            <property name="skipAnnotations" value="true"/>
+        </properties>
+    </rule>
+
+    <!-- Multithreading: keep, minus rules that are false positives or fight this
+         library's actual domain (it IS a scheduler; DoNotUseThreads flags its own
+         core mechanism). AvoidUsingVolatile/AvoidSynchronizedAtMethodLevel/
+         AvoidSynchronizedStatement: core scheduling state (running-flags,
+         ConcurrencySlotTracker) - documented, deliberate design, not a real bug.
+         AvoidThreadGroup: deliberate, for recognizable thread names in debugging.
+         UseConcurrentHashMap: false positive on local, non-shared HashMaps. -->
+    <rule ref="category/java/multithreading.xml">
+        <exclude name="UseConcurrentHashMap"/>
+        <exclude name="AvoidUsingVolatile"/>
+        <exclude name="AvoidSynchronizedAtMethodLevel"/>
+        <exclude name="AvoidThreadGroup"/>
+        <exclude name="AvoidSynchronizedStatement"/>
+        <exclude name="DoNotUseThreads"/>
+    </rule>
+
+    <!-- Performance: keep as-is, low volume / high signal -->
     <rule ref="category/java/performance.xml"/>
 
 </ruleset>

@@ -238,6 +238,7 @@
                     <rulesets>
                         <ruleset>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/pmd-ruleset.xml</ruleset>
                         <ruleset>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/pmd-documentation-public-api.xml</ruleset>
+                        <ruleset>${maven.multiModuleProjectDirectory}/support-projects/ide-config/src/main/resources/pmd-complexity.xml</ruleset>
                     </rulesets>
                     <excludeRoots>
                         <excludeRoot>target/generated-sources</excludeRoot>

@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<ruleset name="gs-complexity"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.sourceforge.io/ruleset_2_0_0.xsd">
+
+    <description>
+        Cyclomatic/NPath complexity, excluding Quarkus deployment/codegen packages
+        (bytecode-generation code is inherently branch-heavy without being
+        genuinely complex - same false-positive pattern as switch-expression
+        mappers elsewhere in this codebase).
+    </description>
+
+    <exclude-pattern>.*/deployment/.*</exclude-pattern>
+
+    <rule ref="category/java/design.xml/CyclomaticComplexity">
+        <properties>
+            <property name="methodReportLevel" value="25"/>
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/NPathComplexity">
+        <properties>
+            <property name="reportLevel" value="500"/>
+        </properties>
+    </rule>
+
+</ruleset>

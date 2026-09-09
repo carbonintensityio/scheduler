@@ -7,10 +7,17 @@
     <description>
         Documentation category scoped to public API only,
         excludes internal/impl packages.
+
+        UncommentedEmptyMethodBody/UncommentedEmptyConstructor excluded: this
+        library uses the idiomatic no-op-listener pattern (default void
+        onX() {}) which doesn't warrant a comment.
     </description>
 
     <exclude-pattern>.*/impl/.*</exclude-pattern>
 
-    <rule ref="category/java/documentation.xml"/>
+    <rule ref="category/java/documentation.xml">
+        <exclude name="UncommentedEmptyMethodBody"/>
+        <exclude name="UncommentedEmptyConstructor"/>
+    </rule>
 
 </ruleset>

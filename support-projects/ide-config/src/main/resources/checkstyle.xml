@@ -62,8 +62,13 @@
     <module name="JavadocStyle"/>
     <module name="MissingJavadocMethod"/>
 
-    <!-- Naming Conventions: kept as-is -->
-    <module name="ConstantName"/>
+    <!-- Naming Conventions: kept as-is. ConstantName's default pattern
+         (^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$) doesn't allow the conventional
+         lowercase `log`/`logger` field name for a private static final
+         Logger, so the pattern is extended (not replaced) to also accept it. -->
+    <module name="ConstantName">
+      <property name="format" value="^[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$|^log(ger)?$"/>
+    </module>
     <module name="LocalFinalVariableName"/>
     <module name="LocalVariableName"/>
     <module name="MemberName"/>
@@ -114,7 +119,14 @@
     <!-- Coding: EqualsHashCode and EmptyStatement removed: they overlap with
          PMD Error-Prone (OverrideBothEqualsAndHashcode / EmptyStatementNotInLoop), and
          PMD is the designated lead for that overlap. Rest kept as-is. -->
-    <module name="HiddenField"/>
+    <!-- HiddenField: the biggest single source of violations here (195), almost
+         all the standard setter/constructor-parameter idiom
+         (this.field = field). Not disabled outright - still flags accidental
+         shadowing elsewhere. -->
+    <module name="HiddenField">
+      <property name="ignoreSetter" value="true"/>
+      <property name="ignoreConstructorParameter" value="true"/>
+    </module>
     <module name="IllegalInstantiation"/>
     <module name="InnerAssignment"/>
     <module name="MagicNumber"/>

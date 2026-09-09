@@ -70,7 +70,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # fetch-depth: 0 (full history, not the default shallow depth-1 clone) is required so
+      # `git diff origin/main...HEAD` in the ratchet step below can resolve origin/main.
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - name: Setup JDK 17
         uses: actions/setup-java@v5
@@ -97,3 +101,6 @@ jobs:
       - name: Summarize PMD/Checkstyle/CPD violations
         if: always()
         run: python3 .github/scripts/summarize-static-analysis.py "**/target/pmd.xml" "**/target/checkstyle-result.xml" "**/target/cpd.xml" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail build on new PMD/Checkstyle violations (ratchet)
+        run: python3 .github/scripts/check-new-violations.py origin/main "**/target/pmd.xml" "**/target/checkstyle-result.xml"
