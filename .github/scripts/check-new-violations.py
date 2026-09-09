@@ -4,8 +4,26 @@ vs a base git ref (a 'ratchet': old violations are grandfathered, new/touched
 code must comply). Mirrors the pattern already used by Spotless's
 ratchetFrom in this repo.
 
-Usage: check-new-violations.py <base-ref> <pmd-glob> <checkstyle-glob>
-Exits 1 (and prints the offending violations) if any violation lands on a
+A violation on a changed line is only "new" if it didn't already exist, on
+that same file, before the change - matched by (rule, message) rather than
+line number, since a violation's line number shifts for reasons that have
+nothing to do with the violation itself (e.g. a purely mechanical edit like
+adding `final` to a method signature moves that declaration line into the
+diff without changing whether it already lacked a Javadoc comment). Without
+this, a backlog-only PR that touches thousands of declaration lines without
+adding new content trips the ratchet on every one of them.
+
+Matching is a per-file multiset (count), not a set: PMD/Checkstyle messages
+for generic checks (e.g. "Comment is too large: Line too long") are
+identical text for every occurrence, so a plain "does this (rule, message)
+exist anywhere in the baseline" check would let a second, genuinely new
+occurrence of the same generic message hide behind one pre-existing one
+elsewhere in the file. Each baseline occurrence can grandfather at most one
+head occurrence; anything beyond the baseline's count for that fingerprint
+is new.
+
+Usage: check-new-violations.py <base-ref> <head-pmd-glob> <head-checkstyle-glob> <base-pmd-glob> <base-checkstyle-glob>
+Exits 1 (and prints the offending violations) if any violation is new on a
 changed line; exits 0 otherwise.
 """
 import glob
@@ -13,6 +31,7 @@ import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from collections import Counter
 
 PMD_NS = {"p": "http://pmd.sourceforge.net/report/2.0.0"}
 
@@ -60,7 +79,45 @@ def matches_changed_file(report_path, changed_files):
     return None
 
 
-def check_pmd(pattern, changed):
+def baseline_pmd_fingerprints(pattern, changed):
+    """{changed_file: Counter{(rule, message): count}} from the baseline (pre-change) PMD
+    report - every violation that already existed, regardless of line number."""
+    fingerprints = {}
+    for path in glob.glob(pattern, recursive=True):
+        try:
+            root = ET.parse(path).getroot()
+        except ET.ParseError:
+            continue
+        for file_el in root.findall("p:file", PMD_NS):
+            cf = matches_changed_file(file_el.get("name", ""), changed)
+            if cf is None:
+                continue
+            bucket = fingerprints.setdefault(cf, Counter())
+            for v in file_el.findall("p:violation", PMD_NS):
+                bucket[(v.get("rule"), v.text.strip())] += 1
+    return fingerprints
+
+
+def baseline_checkstyle_fingerprints(pattern, changed):
+    """Same as baseline_pmd_fingerprints, for a Checkstyle report."""
+    fingerprints = {}
+    for path in glob.glob(pattern, recursive=True):
+        try:
+            root = ET.parse(path).getroot()
+        except ET.ParseError:
+            continue
+        for file_el in root.findall("file"):
+            cf = matches_changed_file(file_el.get("name", ""), changed)
+            if cf is None:
+                continue
+            bucket = fingerprints.setdefault(cf, Counter())
+            for e in file_el.findall("error"):
+                rule = e.get("source", "").rsplit(".", 1)[-1]
+                bucket[(rule, e.get("message", ""))] += 1
+    return fingerprints
+
+
+def check_pmd(pattern, changed, baseline):
     offenders = []
     for path in glob.glob(pattern, recursive=True):
         try:
@@ -72,14 +129,25 @@ def check_pmd(pattern, changed):
             cf = matches_changed_file(fname, changed)
             if cf is None:
                 continue
-            for v in file_el.findall("p:violation", PMD_NS):
+            remaining = baseline.get(cf, Counter()).copy()
+            # Consume baseline credit against ALL of head's violations for this file, in line
+            # order, not just the changed-line ones - an unchanged-line occurrence must claim
+            # its baseline credit first, so it can't be left over to wrongly excuse a distinct,
+            # genuinely new occurrence of the same generic message elsewhere in the file.
+            violations = sorted(
+                file_el.findall("p:violation", PMD_NS), key=lambda v: int(v.get("beginline", "0"))
+            )
+            for v in violations:
                 line = int(v.get("beginline", "0"))
-                if line in changed[cf]:
-                    offenders.append((cf, line, v.get("rule"), v.text.strip()))
+                rule, msg = v.get("rule"), v.text.strip()
+                if remaining[(rule, msg)] > 0:
+                    remaining[(rule, msg)] -= 1
+                elif line in changed[cf]:
+                    offenders.append((cf, line, rule, msg))
     return offenders
 
 
-def check_checkstyle(pattern, changed):
+def check_checkstyle(pattern, changed, baseline):
     offenders = []
     for path in glob.glob(pattern, recursive=True):
         try:
@@ -91,28 +159,42 @@ def check_checkstyle(pattern, changed):
             cf = matches_changed_file(fname, changed)
             if cf is None:
                 continue
-            for e in file_el.findall("error"):
+            remaining = baseline.get(cf, Counter()).copy()
+            # See the matching comment in check_pmd: consume baseline credit against ALL of
+            # head's errors for this file, not just the changed-line ones.
+            errors = sorted(file_el.findall("error"), key=lambda e: int(e.get("line", "0")))
+            for e in errors:
                 line = int(e.get("line", "0"))
-                if line in changed[cf]:
-                    rule = e.get("source", "").rsplit(".", 1)[-1]
-                    offenders.append((cf, line, rule, e.get("message", "")))
+                rule = e.get("source", "").rsplit(".", 1)[-1]
+                msg = e.get("message", "")
+                if remaining[(rule, msg)] > 0:
+                    remaining[(rule, msg)] -= 1
+                elif line in changed[cf]:
+                    offenders.append((cf, line, rule, msg))
     return offenders
 
 
 def main():
-    if len(sys.argv) != 4:
-        print("usage: check-new-violations.py <base-ref> <pmd-glob> <checkstyle-glob>", file=sys.stderr)
+    if len(sys.argv) != 6:
+        print(
+            "usage: check-new-violations.py <base-ref> <head-pmd-glob> <head-checkstyle-glob> "
+            "<base-pmd-glob> <base-checkstyle-glob>",
+            file=sys.stderr,
+        )
         sys.exit(2)
 
-    base_ref, pmd_glob, cs_glob = sys.argv[1], sys.argv[2], sys.argv[3]
+    base_ref, pmd_glob, cs_glob, base_pmd_glob, base_cs_glob = sys.argv[1:6]
     changed = changed_lines_by_file(base_ref)
 
     if not changed:
         print("No changed .java lines vs base ref - nothing to ratchet-check.")
         return
 
-    pmd_offenders = check_pmd(pmd_glob, changed)
-    cs_offenders = check_checkstyle(cs_glob, changed)
+    pmd_baseline = baseline_pmd_fingerprints(base_pmd_glob, changed)
+    cs_baseline = baseline_checkstyle_fingerprints(base_cs_glob, changed)
+
+    pmd_offenders = check_pmd(pmd_glob, changed, pmd_baseline)
+    cs_offenders = check_checkstyle(cs_glob, changed, cs_baseline)
     all_offenders = pmd_offenders + cs_offenders
 
     if not all_offenders:
