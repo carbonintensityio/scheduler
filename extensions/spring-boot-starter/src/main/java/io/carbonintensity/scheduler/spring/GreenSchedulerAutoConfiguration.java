@@ -55,13 +55,11 @@ public class GreenSchedulerAutoConfiguration {
     @Autowired(required = false)
     private CarbonIntensityApi carbonIntensityApi;
 
-    /**
-     * Not {@code final}: this class is a Spring {@code @Configuration} class with
-     * {@code proxyBeanMethods} left at its default of {@code true}, so Spring needs to generate a
-     * CGLIB subclass that overrides every {@code @Bean} method to enforce singleton semantics on
-     * inter-bean method calls (see {@link #handleContextStart}). Spring rejects a {@code final}
-     * {@code @Bean} method here with a {@code BeanDefinitionParsingException} at context startup, so
-     * this method must stay overridable.
+    /*
+     * Not final: proxyBeanMethods defaults to true here, so Spring CGLIB-
+     * subclasses every @Bean method to enforce singleton semantics on
+     * inter-bean calls (see handleContextStart). A final @Bean method
+     * fails context startup.
      */
     @Bean
     @ConditionalOnMissingBean
@@ -73,18 +71,18 @@ public class GreenSchedulerAutoConfiguration {
         return configBuilder.build();
     }
 
-    /**
-     * Not {@code final}: see {@link #schedulerConfig()} for why {@code @Bean} methods on this
-     * {@code @Configuration} class cannot be {@code final}.
+    /*
+     * Not final: see schedulerConfig() above for why @Bean methods here can't
+     * be final.
      */
     @Bean(name = "green-scheduler")
     public SpringSchedulerFactory springSchedulerFactory() {
         return new SpringSchedulerFactory();
     }
 
-    /**
-     * Not {@code final}: see {@link #schedulerConfig()} for why {@code @Bean} methods on this
-     * {@code @Configuration} class cannot be {@code final}.
+    /*
+     * Not final: see schedulerConfig() above for why @Bean methods here can't
+     * be final.
      */
     @Bean
     public SchedulerFactory schedulerFactory() {
@@ -94,9 +92,9 @@ public class GreenSchedulerAutoConfiguration {
     @Autowired
     GreenSchedulerBeanProcessor greenSchedulerBeanProcessor;
 
-    /**
-     * Not {@code final}: see {@link #schedulerConfig()} for why {@code @Bean} methods on this
-     * {@code @Configuration} class cannot be {@code final}.
+    /*
+     * Not final: see schedulerConfig() above for why @Bean methods here can't
+     * be final.
      */
     @Bean
     public ScheduledMethodFactory scheduledMethodFactory() {

@@ -13,11 +13,10 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class SchedulerRecorder {
 
-    /**
-     * Not {@code final}: this is a Quarkus {@link Recorder} class. At build time, Quarkus invokes
-     * {@code public} recorder methods on a bytecode-recording proxy that needs to override them, so
-     * a {@code final} method here makes the application fail to build with a
-     * "cannot be proxied as it is final" error.
+    /*
+     * Not final: Quarkus recorder methods run behind a bytecode-recording
+     * proxy that must override them; final fails the build with
+     * "cannot be proxied as it is final".
      */
     public Supplier<Object> createContext(List<MutableScheduledMethod> scheduledMethods) {
         // Defensive design - make an immutable copy of the scheduled method metadata

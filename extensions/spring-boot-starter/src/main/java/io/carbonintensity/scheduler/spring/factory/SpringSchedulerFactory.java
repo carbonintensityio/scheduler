@@ -22,14 +22,11 @@ public class SpringSchedulerFactory implements FactoryBean<Scheduler> {
     @Autowired(required = false) //NOSONAR see javadoc above
     private Scheduler.EventListener jobListener;
 
-    /**
-     * Not {@code final}: Spring's {@code ConfigurationClassEnhancer} only CGLIB-proxies a
-     * {@link FactoryBean} (to route a direct {@code getObject()} call, such as the one in
-     * {@link io.carbonintensity.scheduler.spring.GreenSchedulerAutoConfiguration#handleContextStart},
-     * through the container's cached singleton product) when {@code getObject()} itself is
-     * overridable. A {@code final} method here makes Spring fall back to the raw, un-proxied
-     * instance, so every direct call returns a brand new {@link Scheduler} instead of the
-     * container-managed singleton.
+    /*
+     * Not final: Spring only CGLIB-proxies a FactoryBean (to route a direct
+     * getObject() call through the container's cached singleton) when
+     * getObject() is overridable. final here means every direct call
+     * returns a fresh Scheduler instead of the managed singleton.
      */
     @Override
     public Scheduler getObject() {
