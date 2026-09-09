@@ -141,7 +141,14 @@
     <module name="FinalClass"/>
     <module name="HideUtilityClassConstructor"/>
     <module name="InterfaceIsType"/>
-    <module name="VisibilityModifier"/>
+    <!-- packageAllowed=true: team decision after review. Default flags package-private
+         fields too, which caught an idiomatic, intentional pattern here rather than a
+         real problem: fields a class shares with its same-package subclass (e.g.
+         AbstractJobDefinition/SimpleJobDefinition). Stays active against real
+         public/protected mutable fields. -->
+    <module name="VisibilityModifier">
+      <property name="packageAllowed" value="true"/>
+    </module>
 
     <!-- Miscellaneous: kept for gs -->
     <module name="ArrayTypeStyle"/>
