@@ -47,10 +47,15 @@
          AvoidDeeplyNestedIfStmts excluded from the broad reference and re-added
          below with a relaxed problemDepth: the default (3) flags routine,
          readable early-return validation chains. -->
+    <!-- LawOfDemeter disabled entirely: team decision after review - the rule's own PMD
+         documentation admits it is "prone to many false-positives", and our own violations
+         were dominated by idiomatic cases (e.g. an enum accessor) rather than real
+         architectural coupling. -->
     <rule ref="category/java/design.xml">
         <exclude name="CyclomaticComplexity"/>
         <exclude name="NPathComplexity"/>
         <exclude name="AvoidDeeplyNestedIfStmts"/>
+        <exclude name="LawOfDemeter"/>
     </rule>
     <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
         <properties>
