@@ -145,9 +145,12 @@
 
     <!-- Miscellaneous: kept for gs -->
     <module name="ArrayTypeStyle"/>
-    <module name="FinalParameters"/>
     <module name="TodoComment"/>
     <module name="UpperEll"/>
+    <!-- FinalParameters excluded on purpose: a blanket "parameters must be final" rule
+         is explicitly out of scope, same reasoning as PMD's already-disabled
+         MethodArgumentCouldBeFinal/LocalVariableCouldBeFinal: matter of taste, no
+         correctness/readability benefit, not enforced anywhere in this project. -->
 
     <module name="SuppressionXpathFilter">
       <property name="file" value="${org.checkstyle.sun.suppressionxpathfilter.config}"
