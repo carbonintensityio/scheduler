@@ -138,9 +138,13 @@
     <module name="SimplifyBooleanExpression"/>
     <module name="SimplifyBooleanReturn"/>
 
-    <!-- Class Design: DesignForExtension kept for gs (OSS library,
-         extension contract matters). Compare with ciio's config, which removes it. -->
-    <module name="DesignForExtension"/>
+    <!-- Class Design: DesignForExtension removed for gs - team decision after review
+         (2026-09-09): a blanket "override points must be final by default" rule needed
+         6 documented exceptions just for this codebase's own Spring/Quarkus/Micronaut
+         framework-integration points (CGLIB proxying, bytecode-recording proxies), and
+         the backlog fix to make the remaining ~200+ methods final was judged not worth
+         its churn across ~46 files for an OSS library whose actual extension surface is
+         narrow. Same call as ciio's config. -->
     <module name="FinalClass"/>
     <module name="HideUtilityClassConstructor"/>
     <module name="InterfaceIsType"/>
