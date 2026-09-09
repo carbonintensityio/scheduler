@@ -14,11 +14,11 @@ public class FixedWindowConstraints {
         this.endTime = endTime;
     }
 
-    public ZonedDateTime getStartTime() {
+    public final ZonedDateTime getStartTime() {
         return startTime;
     }
 
-    public ZonedDateTime getEndTime() {
+    public final ZonedDateTime getEndTime() {
         return endTime;
     }
 }

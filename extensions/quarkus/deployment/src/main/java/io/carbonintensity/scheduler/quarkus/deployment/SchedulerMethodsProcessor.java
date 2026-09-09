@@ -5,7 +5,7 @@ import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBui
 
 public class SchedulerMethodsProcessor {
     @BuildStep
-    ExecutionModelAnnotationsAllowedBuildItem schedulerMethods() {
+    final ExecutionModelAnnotationsAllowedBuildItem schedulerMethods() {
         return new ExecutionModelAnnotationsAllowedBuildItem(
                 method -> method.hasDeclaredAnnotation(SchedulerDotNames.SCHEDULED_NAME)
                         || method.hasDeclaredAnnotation(SchedulerDotNames.SCHEDULES_NAME));

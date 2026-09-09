@@ -13,7 +13,7 @@ public class SimpleSchedulerFactory implements SchedulerFactory {
 
     private final Logger logger = LoggerFactory.getLogger(SimpleSchedulerFactory.class);
 
-    public SimpleScheduler createScheduler(SchedulerConfig schedulerConfig) {
+    public final SimpleScheduler createScheduler(SchedulerConfig schedulerConfig) {
         logger.info("Creating scheduler");
         return new SimpleScheduler(schedulerConfig);
     }

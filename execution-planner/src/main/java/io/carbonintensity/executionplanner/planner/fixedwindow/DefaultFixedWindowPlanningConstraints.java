@@ -50,42 +50,42 @@ public class DefaultFixedWindowPlanningConstraints extends FixedWindowPlanningCo
     }
 
     @Override
-    public String getIdentity() {
+    public final String getIdentity() {
         return identity;
     }
 
     @Override
-    public Duration getDuration() {
+    public final Duration getDuration() {
         return duration;
     }
 
     @Override
-    public String getCarbonIntensityZone() {
+    public final String getCarbonIntensityZone() {
         return carbonIntensityZone;
     }
 
     @Override
-    public ZonedDateTime getStart() {
+    public final ZonedDateTime getStart() {
         return startTime;
     }
 
     @Override
-    public ZonedDateTime getEnd() {
+    public final ZonedDateTime getEnd() {
         return endTime;
     }
 
     @Override
-    public ZoneId getTimeZoneId() {
+    public final ZoneId getTimeZoneId() {
         return timeZoneId;
     }
 
     @Override
-    public Cron getCronExpression() {
+    public final Cron getCronExpression() {
         return cronExpression;
     }
 
     @Override
-    public Cron getFallbackCronExpression() {
+    public final Cron getFallbackCronExpression() {
         return this.fallbackCronExpression;
     }
 

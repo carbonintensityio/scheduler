@@ -24,7 +24,7 @@ public class CarbonIntensityDataFetcherImpl implements CarbonIntensityDataFetche
         }
     }
 
-    public CarbonIntensity fetchCarbonIntensity(ZonedCarbonIntensityPeriod zonedPeriod) {
+    public final CarbonIntensity fetchCarbonIntensity(ZonedCarbonIntensityPeriod zonedPeriod) {
         logger.trace("Fetching data for zone {}", zonedPeriod);
         var carbonIntensity = getFromCache(zonedPeriod);
         if (carbonIntensity.isPresent()) {

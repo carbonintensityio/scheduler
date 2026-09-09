@@ -39,7 +39,7 @@ public class CarbonIntensityFileApi implements CarbonIntensityApi {
     }
 
     @Override
-    public CompletableFuture<CarbonIntensity> getCarbonIntensity(ZonedCarbonIntensityPeriod zonedPeriod) {
+    public final CompletableFuture<CarbonIntensity> getCarbonIntensity(ZonedCarbonIntensityPeriod zonedPeriod) {
         var zone = zonedPeriod.getZone().toLowerCase();
         var timezone = getTimezone(zonedPeriod.getStartTime());
         logger.debug("Getting fallback data for carbonIntensityZone {} and timezone {}", zone, timezone);
@@ -55,7 +55,7 @@ public class CarbonIntensityFileApi implements CarbonIntensityApi {
     }
 
     @Override
-    public boolean isEnabled() {
+    public final boolean isEnabled() {
         return Files.isDirectory(Paths.get(BASE_DIRECTORY));
     }
 

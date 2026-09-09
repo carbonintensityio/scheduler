@@ -33,11 +33,11 @@ public class CarbonIntensityCache {
         this.caffeine = createCache();
     }
 
-    public Optional<CarbonIntensity> get(Key key) {
+    public final Optional<CarbonIntensity> get(Key key) {
         return Optional.ofNullable(caffeine.getIfPresent(key));
     }
 
-    public CarbonIntensity put(Key key, CarbonIntensity value) {
+    public final CarbonIntensity put(Key key, CarbonIntensity value) {
         caffeine.put(key, value);
         return value;
     }
@@ -83,7 +83,7 @@ public class CarbonIntensityCache {
         }
 
         @Override
-        public boolean equals(Object o) {
+        public final boolean equals(Object o) {
             if (this == o)
                 return true;
             if (o == null || getClass() != o.getClass())
@@ -93,7 +93,7 @@ public class CarbonIntensityCache {
         }
 
         @Override
-        public int hashCode() {
+        public final int hashCode() {
             return Objects.hash(time, zone);
         }
     }

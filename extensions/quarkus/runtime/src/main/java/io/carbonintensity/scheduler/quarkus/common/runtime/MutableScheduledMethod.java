@@ -12,35 +12,35 @@ public class MutableScheduledMethod implements ScheduledMethod {
     private String methodName;
     private List<GreenScheduled> schedules;
 
-    public String getInvokerClassName() {
+    public final String getInvokerClassName() {
         return invokerClassName;
     }
 
-    public void setInvokerClassName(String invokerClassName) {
+    public final void setInvokerClassName(String invokerClassName) {
         this.invokerClassName = invokerClassName;
     }
 
-    public String getDeclaringClassName() {
+    public final String getDeclaringClassName() {
         return declaringClassName;
     }
 
-    public void setDeclaringClassName(String declaringClassName) {
+    public final void setDeclaringClassName(String declaringClassName) {
         this.declaringClassName = declaringClassName;
     }
 
-    public String getMethodName() {
+    public final String getMethodName() {
         return methodName;
     }
 
-    public void setMethodName(String methodName) {
+    public final void setMethodName(String methodName) {
         this.methodName = methodName;
     }
 
-    public List<GreenScheduled> getSchedules() {
+    public final List<GreenScheduled> getSchedules() {
         return schedules;
     }
 
-    public void setSchedules(List<GreenScheduled> schedules) {
+    public final void setSchedules(List<GreenScheduled> schedules) {
         this.schedules = schedules;
     }
 

@@ -45,16 +45,16 @@ public class SchedulerJsonRPCService {
         this.vertx = vertx;
     }
 
-    public Multi<JsonObject> streamLog() {
+    public final Multi<JsonObject> streamLog() {
         return log;
     }
 
-    public Multi<JsonObject> streamRunningStatus() {
+    public final Multi<JsonObject> streamRunningStatus() {
         return runningStatus;
     }
 
     @NonBlocking
-    public JsonObject getData() {
+    public final JsonObject getData() {
         SchedulerContext c = context.get();
 
         JsonObject ret = new JsonObject();
@@ -95,7 +95,7 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
-    public JsonObject pauseScheduler() {
+    public final JsonObject pauseScheduler() {
         Scheduler s = scheduler.get();
         if (!s.isRunning()) {
             return newFailure("Scheduler is already paused");
@@ -106,7 +106,7 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
-    public JsonObject resumeScheduler() {
+    public final JsonObject resumeScheduler() {
         Scheduler s = scheduler.get();
         if (s.isRunning()) {
             return newFailure("Scheduler is already running");
@@ -117,7 +117,7 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
-    public JsonObject pauseJob(String identity) {
+    public final JsonObject pauseJob(String identity) {
         Scheduler s = scheduler.get();
         if (s.isPaused(identity)) {
             return newFailure("Job with identity " + identity + " is already paused");
@@ -128,7 +128,7 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
-    public JsonObject resumeJob(String identity) {
+    public final JsonObject resumeJob(String identity) {
         Scheduler s = scheduler.get();
         if (!s.isPaused(identity)) {
             return newFailure("Job with identity " + identity + " is not paused");
@@ -139,7 +139,7 @@ public class SchedulerJsonRPCService {
     }
 
     @NonBlocking
-    public JsonObject executeJob(String methodDescription) {
+    public final JsonObject executeJob(String methodDescription) {
         SchedulerContext c = context.get();
         for (ScheduledMethod metadata : c.getScheduledMethods()) {
             if (metadata.getMethodDescription().equals(methodDescription)) {

@@ -22,6 +22,15 @@ public class SpringSchedulerFactory implements FactoryBean<Scheduler> {
     @Autowired(required = false) //NOSONAR see javadoc above
     private Scheduler.EventListener jobListener;
 
+    /**
+     * Not {@code final}: Spring's {@code ConfigurationClassEnhancer} only CGLIB-proxies a
+     * {@link FactoryBean} (to route a direct {@code getObject()} call, such as the one in
+     * {@link io.carbonintensity.scheduler.spring.GreenSchedulerAutoConfiguration#handleContextStart},
+     * through the container's cached singleton product) when {@code getObject()} itself is
+     * overridable. A {@code final} method here makes Spring fall back to the raw, un-proxied
+     * instance, so every direct call returns a brand new {@link Scheduler} instead of the
+     * container-managed singleton.
+     */
     @Override
     public Scheduler getObject() {
         var scheduler = schedulerFactory.createScheduler(schedulerConfig);
@@ -32,19 +41,19 @@ public class SpringSchedulerFactory implements FactoryBean<Scheduler> {
     }
 
     @Override
-    public Class<Scheduler> getObjectType() {
+    public final Class<Scheduler> getObjectType() {
         return Scheduler.class;
     }
 
-    public void setSchedulerConfig(SchedulerConfig schedulerConfig) {
+    public final void setSchedulerConfig(SchedulerConfig schedulerConfig) {
         this.schedulerConfig = schedulerConfig;
     }
 
-    public void setJobListener(Scheduler.EventListener jobListener) {
+    public final void setJobListener(Scheduler.EventListener jobListener) {
         this.jobListener = jobListener;
     }
 
-    public void setSchedulerFactory(SchedulerFactory schedulerFactory) {
+    public final void setSchedulerFactory(SchedulerFactory schedulerFactory) {
         this.schedulerFactory = schedulerFactory;
     }
 }

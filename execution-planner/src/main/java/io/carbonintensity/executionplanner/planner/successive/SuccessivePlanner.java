@@ -64,12 +64,12 @@ public class SuccessivePlanner implements CarbonIntensityPlanner<SuccessivePlann
     }
 
     @Override
-    public boolean canSchedule(SuccessivePlanningConstraints constraints) {
+    public final boolean canSchedule(SuccessivePlanningConstraints constraints) {
         return constraints != null;
     }
 
     @Override
-    public ZonedDateTime getNextExecutionTime(SuccessivePlanningConstraints constraints) {
+    public final ZonedDateTime getNextExecutionTime(SuccessivePlanningConstraints constraints) {
         ZonedDateTime ws;
         ZonedDateTime we;
 

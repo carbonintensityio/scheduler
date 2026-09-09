@@ -36,7 +36,7 @@ public class SingleJobStrategy implements PlanningStrategy {
     }
 
     @Override
-    public Timeslot bestTimeslot(ZonedDateTime ws, ZonedDateTime we, Duration duration, CarbonIntensity carbonIntensity) {
+    public final Timeslot bestTimeslot(ZonedDateTime ws, ZonedDateTime we, Duration duration, CarbonIntensity carbonIntensity) {
         List<Timeslot> ranked = rankedTimeslots(ws, we, duration, carbonIntensity);
         if (ranked.isEmpty()) {
             log.warn("No timeslots found!  {}", carbonIntensity.getData().size());
@@ -50,7 +50,7 @@ public class SingleJobStrategy implements PlanningStrategy {
     }
 
     @Override
-    public List<Timeslot> rankedTimeslots(ZonedDateTime ws, ZonedDateTime we, Duration duration,
+    public final List<Timeslot> rankedTimeslots(ZonedDateTime ws, ZonedDateTime we, Duration duration,
             CarbonIntensity carbonIntensity) {
         // create timeslots and calculate carbon intensity
         List<Timeslot> timeslots = new ArrayList<>(getTimeslots(ws, we, duration, resolution, carbonIntensity));

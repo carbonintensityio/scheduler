@@ -38,7 +38,7 @@ import io.carbonintensity.scheduler.GreenScheduled;
 public class GreenScheduledProcessor extends AbstractProcessor {
 
     @Override
-    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+    public final boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         Messager messager = processingEnv.getMessager();
 
         for (Element element : roundEnv.getElementsAnnotatedWith(GreenScheduled.class)) {

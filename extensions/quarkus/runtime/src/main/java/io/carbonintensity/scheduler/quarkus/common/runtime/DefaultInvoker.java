@@ -12,7 +12,7 @@ import io.quarkus.arc.ManagedContext;
 public abstract class DefaultInvoker implements ScheduledInvoker {
 
     @Override
-    public CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
+    public final CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
         ManagedContext requestContext = Arc.container().requestContext();
         if (requestContext.isActive()) {
             return invokeBean(execution);

@@ -43,7 +43,7 @@ public class CarbonIntensityPeriod implements Comparable<CarbonIntensityPeriod> 
     }
 
     @Override
-    public boolean equals(Object o) {
+    public final boolean equals(Object o) {
         if (this == o)
             return true;
         if (!(o instanceof CarbonIntensityPeriod))
@@ -54,28 +54,28 @@ public class CarbonIntensityPeriod implements Comparable<CarbonIntensityPeriod> 
                 && Objects.equals(resolution(), that.resolution());
     }
 
-    Duration resolution() {
+    final Duration resolution() {
         return resolution;
     }
 
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         return Objects.hash(moment(), value(), resolution());
     }
 
     @Override
-    public int compareTo(CarbonIntensityPeriod o) {
+    public final int compareTo(CarbonIntensityPeriod o) {
         return Comparator.comparing(CarbonIntensityPeriod::moment)
                 .thenComparing(CarbonIntensityPeriod::resolution)
                 .compare(this, o);
     }
 
-    public boolean contains(Instant point) {
+    public final boolean contains(Instant point) {
         return point.compareTo(instant) >= 0 && point.compareTo(instant.plus(resolution)) <= 0;
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return "CarbonIntensityMoment{" +
                 "moment=" + instant +
                 ", value=" + value +
@@ -83,11 +83,11 @@ public class CarbonIntensityPeriod implements Comparable<CarbonIntensityPeriod> 
                 '}';
     }
 
-    public Instant moment() {
+    public final Instant moment() {
         return instant;
     }
 
-    public BigDecimal value() {
+    public final BigDecimal value() {
         return value;
     }
 

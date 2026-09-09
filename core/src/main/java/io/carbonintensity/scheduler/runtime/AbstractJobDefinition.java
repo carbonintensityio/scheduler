@@ -44,7 +44,7 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     }
 
     @Override
-    public JobDefinition setMinimumGap(Duration duration) {
+    public final JobDefinition setMinimumGap(Duration duration) {
         checkScheduled();
         this.minimumGap = Objects.requireNonNull(duration);
         if (this.minimumGap.isNegative() || this.minimumGap.isZero()) {
@@ -54,7 +54,7 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     }
 
     @Override
-    public JobDefinition setMaximumGap(Duration duration) {
+    public final JobDefinition setMaximumGap(Duration duration) {
         checkScheduled();
         this.maximumGap = Objects.requireNonNull(duration);
         if (this.maximumGap.isNegative() || this.maximumGap.isZero()) {
@@ -64,7 +64,7 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     }
 
     @Override
-    public JobDefinition setDuration(Duration duration) {
+    public final JobDefinition setDuration(Duration duration) {
         checkScheduled();
         this.duration = Objects.requireNonNull(duration);
         if (this.duration.isNegative() || this.duration.isZero()) {
@@ -74,28 +74,28 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     }
 
     @Override
-    public JobDefinition setCarbonIntensityZone(String carbonIntensityZone) {
+    public final JobDefinition setCarbonIntensityZone(String carbonIntensityZone) {
         checkScheduled();
         this.zone = Objects.requireNonNull(carbonIntensityZone);
         return this;
     }
 
     @Override
-    public JobDefinition setConcurrentExecution(ConcurrentExecution concurrentExecution) {
+    public final JobDefinition setConcurrentExecution(ConcurrentExecution concurrentExecution) {
         checkScheduled();
         this.concurrentExecution = Objects.requireNonNull(concurrentExecution);
         return this;
     }
 
     @Override
-    public JobDefinition setSkipPredicate(SkipPredicate skipPredicate) {
+    public final JobDefinition setSkipPredicate(SkipPredicate skipPredicate) {
         checkScheduled();
         this.skipPredicate = Objects.requireNonNull(skipPredicate);
         return this;
     }
 
     @Override
-    public JobDefinition setOverdueGracePeriod(Duration period) {
+    public final JobDefinition setOverdueGracePeriod(Duration period) {
         checkScheduled();
         this.overdueGracePeriod = Objects.requireNonNull(period);
         if (this.overdueGracePeriod.isNegative()) {
@@ -105,13 +105,13 @@ public abstract class AbstractJobDefinition implements JobDefinition {
     }
 
     @Override
-    public JobDefinition setTask(Consumer<ScheduledExecution> task) {
+    public final JobDefinition setTask(Consumer<ScheduledExecution> task) {
         checkScheduled();
         this.task = Objects.requireNonNull(task);
         return this;
     }
 
-    protected void checkScheduled() {
+    protected final void checkScheduled() {
         if (scheduled) {
             throw new IllegalStateException("Cannot modify a job that was already scheduled");
         }

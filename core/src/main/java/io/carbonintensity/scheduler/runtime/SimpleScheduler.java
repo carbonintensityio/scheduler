@@ -149,7 +149,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
     }
 
-    public void scheduleMethod(ScheduledMethod method) {
+    public final void scheduleMethod(ScheduledMethod method) {
         int nameSequence = 0;
         for (GreenScheduled scheduled : method.getSchedules()) {
             nameSequence++;
@@ -168,7 +168,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     @Override
-    public JobDefinition newJob(String identity) {
+    public final JobDefinition newJob(String identity) {
         Objects.requireNonNull(identity);
         if (scheduledTasks.containsKey(identity)) {
             throw new IllegalStateException("A job with this identity is already scheduled: " + identity);
@@ -177,7 +177,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     @Override
-    public Trigger unscheduleJob(String identity) {
+    public final Trigger unscheduleJob(String identity) {
         Objects.requireNonNull(identity);
         if (!identity.isEmpty()) {
             ScheduledTask task = scheduledTasks.get(identity);
@@ -190,7 +190,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         return null;
     }
 
-    void initExecutors() {
+    final void initExecutors() {
         if (scheduledExecutor == null) {
             ThreadFactory tf = new ThreadFactory() {
 
@@ -235,7 +235,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
     }
 
-    public void start() {
+    public final void start() {
         if (schedulerConfig.isEnabled() && (scheduledFuture == null || scheduledFuture.isDone())) {
             running = schedulerConfig.getStartMode() != StartMode.HALTED;
 
@@ -308,22 +308,22 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     @Override
-    public void addJobListener(EventListener listener) {
+    public final void addJobListener(EventListener listener) {
         if (!this.eventListeners.contains(listener)) {
             this.eventListeners.add(listener);
         }
     }
 
     @Override
-    public boolean removeJobListener(EventListener listener) {
+    public final boolean removeJobListener(EventListener listener) {
         return this.eventListeners.remove(listener);
     }
 
-    List<EventListener> getEventListeners() {
+    final List<EventListener> getEventListeners() {
         return new ArrayList<>(this.eventListeners);
     }
 
-    void checkTriggers() {
+    final void checkTriggers() {
         if (!running) {
             log.trace("Skip all triggers - scheduler paused");
             return;
@@ -340,7 +340,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     @Override
-    public void pause() {
+    public final void pause() {
         if (!enabled) {
             log.warn("Scheduler is disabled and cannot be paused");
         } else {
@@ -350,7 +350,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     @Override
-    public void pause(String identity) {
+    public final void pause(String identity) {
         Objects.requireNonNull(identity, "Cannot pause - identity is null");
         if (identity.isEmpty()) {
             log.warn("Cannot pause - identity is empty");
@@ -364,7 +364,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     @Override
-    public boolean isPaused(String identity) {
+    public final boolean isPaused(String identity) {
         Objects.requireNonNull(identity);
         if (identity.isEmpty()) {
             return false;
@@ -377,7 +377,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     @Override
-    public void resume() {
+    public final void resume() {
         if (!enabled) {
             log.warn("Scheduler is disabled and cannot be resumed");
         } else {
@@ -387,7 +387,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     @Override
-    public void resume(String identity) {
+    public final void resume(String identity) {
         Objects.requireNonNull(identity, "Cannot resume - identity is null");
         if (identity.isEmpty()) {
             log.warn("Cannot resume - identity is empty");
@@ -401,17 +401,17 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     @Override
-    public boolean isRunning() {
+    public final boolean isRunning() {
         return enabled && running;
     }
 
     @Override
-    public List<Trigger> getScheduledJobs() {
+    public final List<Trigger> getScheduledJobs() {
         return scheduledTasks.values().stream().map(task -> task.trigger).collect(Collectors.toUnmodifiableList());
     }
 
     @Override
-    public Trigger getScheduledJob(String identity) {
+    public final Trigger getScheduledJob(String identity) {
         Objects.requireNonNull(identity);
         if (identity.isEmpty()) {
             return null;
@@ -423,7 +423,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         return null;
     }
 
-    SimpleTrigger createTrigger(String id, String methodDescription, Duration overdueGracePeriod,
+    final SimpleTrigger createTrigger(String id, String methodDescription, Duration overdueGracePeriod,
             PlanningConstraints constraints) {
 
         if (constraints instanceof FixedWindowPlanningConstraints) {
@@ -443,7 +443,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         throw new IllegalArgumentException("Constraints type not implemented: " + constraints.getClass());
     }
 
-    ScheduledTask registerTask(String id, ScheduledTask scheduledTask) {
+    final ScheduledTask registerTask(String id, ScheduledTask scheduledTask) {
         start();
         return scheduledTasks.putIfAbsent(id, scheduledTask);
     }

@@ -55,6 +55,14 @@ public class GreenSchedulerAutoConfiguration {
     @Autowired(required = false)
     private CarbonIntensityApi carbonIntensityApi;
 
+    /**
+     * Not {@code final}: this class is a Spring {@code @Configuration} class with
+     * {@code proxyBeanMethods} left at its default of {@code true}, so Spring needs to generate a
+     * CGLIB subclass that overrides every {@code @Bean} method to enforce singleton semantics on
+     * inter-bean method calls (see {@link #handleContextStart}). Spring rejects a {@code final}
+     * {@code @Bean} method here with a {@code BeanDefinitionParsingException} at context startup, so
+     * this method must stay overridable.
+     */
     @Bean
     @ConditionalOnMissingBean
     public SchedulerConfig schedulerConfig() {
@@ -65,11 +73,19 @@ public class GreenSchedulerAutoConfiguration {
         return configBuilder.build();
     }
 
+    /**
+     * Not {@code final}: see {@link #schedulerConfig()} for why {@code @Bean} methods on this
+     * {@code @Configuration} class cannot be {@code final}.
+     */
     @Bean(name = "green-scheduler")
     public SpringSchedulerFactory springSchedulerFactory() {
         return new SpringSchedulerFactory();
     }
 
+    /**
+     * Not {@code final}: see {@link #schedulerConfig()} for why {@code @Bean} methods on this
+     * {@code @Configuration} class cannot be {@code final}.
+     */
     @Bean
     public SchedulerFactory schedulerFactory() {
         return new SimpleSchedulerFactory();
@@ -78,13 +94,17 @@ public class GreenSchedulerAutoConfiguration {
     @Autowired
     GreenSchedulerBeanProcessor greenSchedulerBeanProcessor;
 
+    /**
+     * Not {@code final}: see {@link #schedulerConfig()} for why {@code @Bean} methods on this
+     * {@code @Configuration} class cannot be {@code final}.
+     */
     @Bean
     public ScheduledMethodFactory scheduledMethodFactory() {
         return new ScheduledMethodFactory();
     }
 
     @EventListener
-    public void handleContextStart(ContextRefreshedEvent event) {
+    public final void handleContextStart(ContextRefreshedEvent event) {
         var simpleScheduler = (SimpleScheduler) springSchedulerFactory().getObject();
         while (greenSchedulerBeanProcessor.hasNext()) {
             var beanInfo = greenSchedulerBeanProcessor.next();
@@ -95,7 +115,7 @@ public class GreenSchedulerAutoConfiguration {
     }
 
     @PreDestroy
-    public void closeScheduler() {
+    public final void closeScheduler() {
         if (simpleScheduler != null) {
             logger.info("Closing the green scheduler.");
             simpleScheduler.close();

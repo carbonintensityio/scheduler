@@ -22,59 +22,59 @@ public class GreenSchedulerConfigurationProperties {
     private String apiUrl = SchedulerDefaults.DEFAULT_API_URL;
     private String apiKey;
 
-    public boolean isEnabled() {
+    public final boolean isEnabled() {
         return enabled;
     }
 
-    public void setEnabled(boolean enabled) {
+    public final void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
-    public SchedulerConfig.StartMode getStartMode() {
+    public final SchedulerConfig.StartMode getStartMode() {
         return startMode;
     }
 
-    public void setStartMode(SchedulerConfig.StartMode startMode) {
+    public final void setStartMode(SchedulerConfig.StartMode startMode) {
         this.startMode = startMode;
     }
 
-    public int getJobExecutors() {
+    public final int getJobExecutors() {
         return jobExecutors;
     }
 
-    public void setJobExecutors(int jobExecutors) {
+    public final void setJobExecutors(int jobExecutors) {
         this.jobExecutors = jobExecutors;
     }
 
-    public Duration getOverdueGracePeriod() {
+    public final Duration getOverdueGracePeriod() {
         return overdueGracePeriod;
     }
 
-    public void setOverdueGracePeriod(Duration overdueGracePeriod) {
+    public final void setOverdueGracePeriod(Duration overdueGracePeriod) {
         this.overdueGracePeriod = overdueGracePeriod;
     }
 
-    public Duration getShutdownGracePeriod() {
+    public final Duration getShutdownGracePeriod() {
         return shutdownGracePeriod;
     }
 
-    public void setShutdownGracePeriod(Duration shutdownGracePeriod) {
+    public final void setShutdownGracePeriod(Duration shutdownGracePeriod) {
         this.shutdownGracePeriod = shutdownGracePeriod;
     }
 
-    public String getApiUrl() {
+    public final String getApiUrl() {
         return apiUrl;
     }
 
-    public void setApiUrl(String apiUrl) {
+    public final void setApiUrl(String apiUrl) {
         this.apiUrl = apiUrl;
     }
 
-    public String getApiKey() {
+    public final String getApiKey() {
         return apiKey;
     }
 
-    public void setApiKey(String apiKey) {
+    public final void setApiKey(String apiKey) {
         this.apiKey = apiKey;
     }
 }

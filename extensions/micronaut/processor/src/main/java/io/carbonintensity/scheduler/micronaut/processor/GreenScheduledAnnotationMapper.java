@@ -26,12 +26,12 @@ public class GreenScheduledAnnotationMapper implements TypedAnnotationMapper<Gre
     static final String GREEN_SCHEDULED_EXECUTABLE = "io.carbonintensity.scheduler.micronaut.GreenScheduledExecutable";
 
     @Override
-    public Class<GreenScheduled> annotationType() {
+    public final Class<GreenScheduled> annotationType() {
         return GreenScheduled.class;
     }
 
     @Override
-    public List<AnnotationValue<?>> map(AnnotationValue<GreenScheduled> annotation, VisitorContext visitorContext) {
+    public final List<AnnotationValue<?>> map(AnnotationValue<GreenScheduled> annotation, VisitorContext visitorContext) {
         return Collections.singletonList(AnnotationValue.builder(GREEN_SCHEDULED_EXECUTABLE).build());
     }
 }

@@ -17,52 +17,52 @@ public class CarbonIntensity {
     private Instant end;
     private List<BigDecimal> data = new ArrayList<>();
 
-    public Duration getResolution() {
+    public final Duration getResolution() {
         return resolution;
     }
 
-    public void setResolution(Duration resolution) {
+    public final void setResolution(Duration resolution) {
         this.resolution = resolution;
     }
 
-    public String getZone() {
+    public final String getZone() {
         return zone;
     }
 
-    public void setZone(String zone) {
+    public final void setZone(String zone) {
         this.zone = zone;
     }
 
-    public boolean hasData() {
+    public final boolean hasData() {
         return data != null && !data.isEmpty();
     }
 
-    public List<BigDecimal> getData() {
+    public final List<BigDecimal> getData() {
         return data;
     }
 
-    public void setData(List<BigDecimal> data) {
+    public final void setData(List<BigDecimal> data) {
         this.data = data;
     }
 
-    public Instant getStart() {
+    public final Instant getStart() {
         return start;
     }
 
-    public void setStart(Instant start) {
+    public final void setStart(Instant start) {
         this.start = start;
     }
 
-    public Instant getEnd() {
+    public final Instant getEnd() {
         return end;
     }
 
-    public void setEnd(Instant end) {
+    public final void setEnd(Instant end) {
         this.end = end;
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return "CarbonIntensity{" +
                 "resolution=" + resolution +
                 ", zone='" + zone + '\'' +

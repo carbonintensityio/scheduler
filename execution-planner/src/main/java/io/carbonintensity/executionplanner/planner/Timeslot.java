@@ -25,15 +25,15 @@ public class Timeslot {
         this.carbonIntensity = carbonIntensity;
     }
 
-    public ZonedDateTime start() {
+    public final ZonedDateTime start() {
         return start;
     }
 
-    public ZonedDateTime end() {
+    public final ZonedDateTime end() {
         return end;
     }
 
-    public BigDecimal carbonIntensity() {
+    public final BigDecimal carbonIntensity() {
         return carbonIntensity;
     }
 
@@ -102,7 +102,7 @@ public class Timeslot {
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
         return "Timeslot{" +
                 "start=" + start +
                 ", end=" + end +
