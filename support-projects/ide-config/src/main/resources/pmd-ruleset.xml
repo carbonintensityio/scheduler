@@ -50,12 +50,18 @@
     <!-- LawOfDemeter disabled entirely: team decision after review - the rule's own PMD
          documentation admits it is "prone to many false-positives", and our own violations
          were dominated by idiomatic cases (e.g. an enum accessor) rather than real
-         architectural coupling. -->
+         architectural coupling.
+         ExcessivePublicCount disabled entirely: same rationale as ciio - false-positive on
+         large data-driven enums, and PMD's exclude-pattern only works at the file level,
+         not per type-declaration, so enum declarations specifically can't be excluded.
+         TooManyMethods/GodClass/CognitiveComplexity/ExcessiveImports/CouplingBetweenObjects
+         stay on defaults - consistent, real signals on the same handful of classes. -->
     <rule ref="category/java/design.xml">
         <exclude name="CyclomaticComplexity"/>
         <exclude name="NPathComplexity"/>
         <exclude name="AvoidDeeplyNestedIfStmts"/>
         <exclude name="LawOfDemeter"/>
+        <exclude name="ExcessivePublicCount"/>
     </rule>
     <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
         <properties>
