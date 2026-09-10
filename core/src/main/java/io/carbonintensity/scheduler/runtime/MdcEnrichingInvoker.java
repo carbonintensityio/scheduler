@@ -9,18 +9,12 @@ import io.carbonintensity.scheduler.Trigger;
 import io.carbonintensity.scheduler.observability.DecisionStrategy;
 
 /**
- * The outermost wrapper of every invoker chain (see {@link SimpleScheduler#initInvoker}) - every log line emitted
- * anywhere in the chain during a job's invocation, not just inside the innermost invoker, carries the job's
- * {@code identity}, {@code strategy} and {@code zone} (the same three canonical field names settled on for the
- * not-yet-implemented CIIO-282 metrics work, for terminology consistency), without every log statement needing to
- * pass them explicitly.
- * <p>
- * MDC is thread-local, so it is cleared eagerly on the calling (dispatch) thread as soon as this invoker's own call
- * returns, even if the returned {@link CompletionStage} is still pending - that thread comes from a shared,
- * fixed-size job executor pool and may be handed the next job's dispatch immediately, so it must never carry a
- * stale value into an unrelated job. A job's own asynchronous continuations that log after this method has already
- * returned, on a thread of their own choosing, are outside what this can guarantee - propagating MDC context
- * across arbitrary executor boundaries is a larger change than fits here.
+ * The outermost wrapper of every invoker chain (see
+ * {@link SimpleScheduler#initInvoker}) - every log line in the chain during
+ * a job's invocation carries the job's {@code identity}, {@code strategy}
+ * and {@code zone} (the same three canonical names settled on for the
+ * not-yet-implemented CIIO-282 metrics work), without every log statement
+ * needing to pass them explicitly.
  */
 final class MdcEnrichingInvoker extends DelegateInvoker {
 
@@ -32,6 +26,14 @@ final class MdcEnrichingInvoker extends DelegateInvoker {
         super(delegate);
     }
 
+    /**
+     * MDC is thread-local, so it's cleared eagerly on the calling (dispatch)
+     * thread as soon as this call returns, even if the returned
+     * {@link CompletionStage} is still pending - that thread comes from a
+     * shared, fixed-size job executor pool and may be handed the next job's
+     * dispatch immediately, so it must never carry a stale value into an
+     * unrelated job.
+     */
     @Override
     public CompletionStage<Void> invoke(ScheduledExecution execution) {
         Trigger trigger = execution.getTrigger();
@@ -43,6 +45,12 @@ final class MdcEnrichingInvoker extends DelegateInvoker {
         }
     }
 
+    /**
+     * A job's own async continuations that log after this method returns,
+     * on a thread of their own choosing, are outside what this can
+     * guarantee - propagating MDC across arbitrary executor boundaries is
+     * a larger change than fits here.
+     */
     static void putMdc(Trigger trigger) {
         MDC.put(MDC_IDENTITY_KEY, trigger.getId());
         DecisionStrategy strategy = trigger.getDecisionStrategy();

@@ -8,27 +8,32 @@ import io.carbonintensity.executionplanner.spi.PlannedExecution;
 import io.carbonintensity.scheduler.observability.DecisionReason;
 
 /**
- * What a trigger decided on a single {@code evaluate()} call that led to a real fire: why this particular moment
- * was chosen, and the carbon-intensity value behind that choice, when one was actually known.
+ * What a trigger decided on a single {@code evaluate()} call that led to a
+ * real fire: why this moment was chosen, and the carbon-intensity value
+ * behind it, when known.
  * <p>
- * Deliberately not public API - {@link io.carbonintensity.scheduler.observability.DecisionTimelineEntry} is the
- * public-facing shape this feeds into. The two fields are always constructed together, atomically: a trigger that
- * mutated a reason field and an intensity-value field independently could fall back from a carbon-aware fire to a
- * plain cron/interval one and leave the previous, unrelated fire's real intensity value attached to the new
- * fallback reason. {@link #from(PlannedExecution, DecisionReason)} covers the carbon-aware path; fallback triggers
- * construct a {@code DecisionOutcome} directly, always pairing their reason with {@link OptionalDouble#empty()} -
- * never an inherited value.
+ * Deliberately not public API - the public-facing shape this feeds into is
+ * {@link io.carbonintensity.scheduler.observability.DecisionTimelineEntry}.
  */
 record DecisionOutcome(DecisionReason reason, OptionalDouble intensityValue) {
 
+    /**
+     * Constructed atomically on purpose: mutating {@code reason} and
+     * {@code intensityValue} independently could let a fallback
+     * (cron/interval) fire keep a stale value left over from a prior
+     * carbon-aware fire.
+     */
     DecisionOutcome {
         Objects.requireNonNull(reason, "Reason cannot be null");
         Objects.requireNonNull(intensityValue, "IntensityValue cannot be null - use OptionalDouble.empty()");
     }
 
     /**
-     * Pulls the intensity straight from the {@link PlannedExecution} the planner already built for this fire,
-     * rather than re-deriving it or leaving it to be filled in separately.
+     * Pulls the intensity straight from the {@link PlannedExecution} already
+     * built for this fire, rather than re-deriving it separately. Fallback
+     * triggers build a {@code DecisionOutcome} directly instead, always
+     * pairing their reason with {@link OptionalDouble#empty()} - never an
+     * inherited value.
      */
     static DecisionOutcome from(PlannedExecution plannedExecution, DecisionReason reason) {
         Objects.requireNonNull(plannedExecution, "PlannedExecution cannot be null");

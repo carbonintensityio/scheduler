@@ -54,15 +54,18 @@ public interface Trigger {
     }
 
     /**
-     * @return the top-level {@link DecisionStrategy} this trigger is configured with, or {@code null} for a
-     *         trigger that makes no carbon-aware decision of its own (e.g. an internal, non-adopter-facing trigger)
+     * @return the top-level {@link DecisionStrategy} this trigger is
+     *         configured with, or {@code null} for a trigger that makes no
+     *         carbon-aware decision of its own (e.g. an internal,
+     *         non-adopter-facing trigger)
      */
     default DecisionStrategy getDecisionStrategy() {
         return null;
     }
 
     /**
-     * @return the carbon-intensity zone this trigger is configured with, or {@code null} if not applicable
+     * @return the carbon-intensity zone this trigger is configured with, or
+     *         {@code null} if not applicable
      * @see GreenScheduled#carbonIntensityZone()
      */
     default String getCarbonIntensityZone() {

@@ -70,20 +70,24 @@ public class SchedulerConfig {
     private int maxConcurrentPerSlot = SchedulerDefaults.DEFAULT_MAX_CONCURRENT_PER_SLOT;
 
     /**
-     * Override hook for the decision-timeline's storage - {@code null} (the default) means the scheduler uses its
-     * own in-memory implementation. See {@link DecisionTimelineStore} for why a consumer might plug in their own.
+     * Override hook for the decision-timeline's storage - {@code null} (the
+     * default) means the scheduler uses its own in-memory implementation.
+     * See {@link DecisionTimelineStore} for why a consumer might plug in
+     * their own.
      */
     private DecisionTimelineStore decisionTimelineStore;
 
     /**
-     * How many days of decision-timeline entries the default in-memory store retains per job. Ignored when
-     * {@link #decisionTimelineStore} is overridden - a custom store is responsible for its own retention policy.
+     * How many days of decision-timeline entries the default in-memory
+     * store retains per job. Ignored when {@link #decisionTimelineStore}
+     * is overridden - a custom store owns its own retention policy.
      */
     private int decisionTimelineRetentionDays = SchedulerDefaults.DEFAULT_DECISION_TIMELINE_RETENTION_DAYS;
 
     /**
-     * Hard cap on decision-timeline entries retained per job in the default in-memory store, regardless of age.
-     * Ignored when {@link #decisionTimelineStore} is overridden.
+     * Hard cap on decision-timeline entries retained per job in the default
+     * in-memory store, regardless of age. Ignored when
+     * {@link #decisionTimelineStore} is overridden.
      */
     private int decisionTimelineMaxEntriesPerJob = SchedulerDefaults.DEFAULT_DECISION_TIMELINE_MAX_ENTRIES_PER_JOB;
 

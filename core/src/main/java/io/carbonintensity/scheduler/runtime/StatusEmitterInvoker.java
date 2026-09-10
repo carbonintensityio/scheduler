@@ -10,11 +10,6 @@ import io.carbonintensity.scheduler.Trigger;
 
 /**
  * An invoker wrapper that fires events when an execution of a scheduled method is finished.
- * <p>
- * MDC enrichment (the job's {@code identity}/{@code strategy}/{@code zone}) is handled by
- * {@link MdcEnrichingInvoker}, which wraps the whole invoker chain from the outside - not here. This class only
- * re-establishes it, defensively, right before its own completion-time logging below, in case that runs on a
- * different thread than the one {@link MdcEnrichingInvoker} originally set it on.
  */
 public final class StatusEmitterInvoker extends DelegateInvoker {
 
@@ -29,8 +24,11 @@ public final class StatusEmitterInvoker extends DelegateInvoker {
     @Override
     public CompletionStage<Void> invoke(ScheduledExecution execution) {
         Trigger trigger = execution.getTrigger();
-        log.trace("Running status emitter invoker for {} at {}.", trigger.getId(), execution.getScheduledFireTime());
+        if (log.isTraceEnabled()) {
+            log.trace("Running status emitter invoker for {} at {}.", trigger.getId(), execution.getScheduledFireTime());
+        }
         return invokeDelegate(execution).whenComplete((v, t) -> {
+            // re-establish MDC in case this runs on a different thread
             MdcEnrichingInvoker.putMdc(trigger);
             if (t != null) {
                 log.error("Error occurred while executing task for trigger {}", trigger, t);

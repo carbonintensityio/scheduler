@@ -353,12 +353,12 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     /**
-     * Records a {@link DecisionTimelineEntry} for a real trigger fire, unconditionally - no {@code @GreenObserved}
-     * opt-in required, since this is the "is this a black box" baseline the decision timeline exists for.
-     * <p>
-     * {@link Trigger#getDecisionStrategy()} defaults to {@code null}, only overridden by {@link FixedWindowTrigger}
-     * and {@link SuccessiveTrigger} - any other trigger type (an internal, non-adopter-facing trigger with no
-     * "green" decision to explain) is silently excluded from the decision timeline by simply never overriding it.
+     * Records a {@link DecisionTimelineEntry} for a real trigger fire,
+     * unconditionally - no opt-in needed, since this is the "is this a
+     * black box" baseline the decision timeline exists for.
+     * {@link Trigger#getDecisionStrategy()} defaults to {@code null}; only
+     * {@link FixedWindowTrigger}/{@link SuccessiveTrigger} override it, so
+     * other trigger types are silently excluded from the timeline.
      */
     private void recordDecision(SimpleTrigger trigger, EvaluationResult result) {
         DecisionStrategy strategy = trigger.getDecisionStrategy();
@@ -371,8 +371,8 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         try {
             decisionTimelineStore.record(trigger.getId(), entry);
         } catch (RuntimeException e) {
-            // observability must never break business logic - the job itself already ran (or is running)
-            // regardless of this failure
+            // observability must never break business logic - the job itself
+            // already ran (or is running) regardless of this failure
             log.warn("Failed to record a decision-timeline entry for job '{}' - continuing without it", trigger.getId(), e);
             return;
         }
@@ -500,8 +500,9 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         if (instrumenter != null) {
             invoker = new InstrumentedInvoker(invoker, instrumenter);
         }
-        // Outermost: every decorator above logs before delegating down, so MDC must be established before any
-        // of them run, not just inside the innermost one.
+        // Outermost: every decorator above logs before delegating down, so
+        // MDC must be established before any of them run, not just inside
+        // the innermost one.
         return new MdcEnrichingInvoker(invoker);
     }
 
@@ -521,9 +522,10 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
     }
 
     /**
-     * A trigger's decision, bundled with the fire time it applies to - the two are always produced together by
-     * {@link SimpleTrigger#evaluate}, so they travel together rather than the outcome being smuggled out via a
-     * mutable field on the trigger for {@link #recordDecision} to re-read moments later.
+     * A trigger's decision, bundled with the fire time it applies to - the
+     * two are always produced together by {@link SimpleTrigger#evaluate},
+     * so they travel together rather than being smuggled out via a mutable
+     * field for {@link #recordDecision} to re-read moments later.
      */
     record EvaluationResult(ZonedDateTime fireTime, DecisionOutcome outcome) {
     }
