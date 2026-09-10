@@ -1,0 +1,305 @@
+package io.carbonintensity.scheduler.runtime;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensity;
+import io.carbonintensity.scheduler.GreenScheduled;
+import io.carbonintensity.scheduler.ScheduledExecution;
+import io.carbonintensity.scheduler.Scheduler;
+import io.carbonintensity.scheduler.Trigger;
+import io.carbonintensity.scheduler.observability.CarbonImpactResult;
+import io.carbonintensity.scheduler.observability.GreenObserved;
+import io.carbonintensity.scheduler.test.helper.AnnotationUtil;
+
+/**
+ * Tests for {@link CarbonImpactBatchInvoker}: the orchestration around {@link CarbonImpactCalculator} and
+ * {@link SimpleScheduler.SimpleTrigger#naiveBaselineFireTime} - fetching (with retry/backoff and per-zone/day
+ * sharing), the never-process-today rule, the backlog cutoff, and publishing results only once a day's windows are
+ * fully and successfully processed.
+ */
+class CarbonImpactBatchInvokerTest {
+
+    private static final ZoneId UTC = ZoneId.of("UTC");
+    private static final String ZONE = "NL";
+
+    private SimpleScheduler scheduler;
+    private ScheduledExecutorService retryExecutor;
+    private FakeCarbonIntensityApi api;
+    private CopyOnWriteArrayList<CarbonImpactResult> publishedResults;
+
+    @BeforeEach
+    void setUp() {
+        api = new FakeCarbonIntensityApi();
+        retryExecutor = Executors.newSingleThreadScheduledExecutor();
+        publishedResults = new CopyOnWriteArrayList<>();
+
+        SchedulerConfig config = new SchedulerConfig();
+        config.setCarbonIntensityApi(api);
+        config.setClock(Clock.fixed(Instant.parse("2026-09-05T00:00:00Z"), UTC));
+        scheduler = new SimpleScheduler(config);
+        scheduler.addJobListener(new Scheduler.EventListener() {
+            @Override
+            public void jobCarbonImpactCalculated(Trigger trigger, CarbonImpactResult result) {
+                publishedResults.add(result);
+            }
+        });
+    }
+
+    @AfterEach
+    void tearDown() {
+        scheduler.close();
+        retryExecutor.shutdownNow();
+    }
+
+    @Test
+    void happyPathPublishesResultAndRemovesTheWindow() throws Exception {
+        LocalDate yesterday = LocalDate.of(2026, 9, 4);
+        api.respondWith(ZONE, yesterday, flatIntensity(yesterday, 100));
+
+        SimpleScheduler.SimpleTrigger trigger = registerCarbonImpactJob("job-a", true);
+        Instant windowStart = yesterday.atStartOfDay(UTC).plusHours(10).toInstant();
+        Instant windowEnd = windowStart.plus(Duration.ofMinutes(30));
+        scheduler.getCarbonImpactHistory().record("job-a", windowStart, windowEnd);
+
+        newInvoker().invoke(fakeExecution()).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertThat(publishedResults).hasSize(1);
+        CarbonImpactResult result = publishedResults.get(0);
+        assertThat(result.day()).isEqualTo(yesterday);
+        assertThat(result.impactGrams()).isGreaterThan(0);
+        assertThat(trigger.getLastCarbonImpact()).contains(result);
+        assertThat(scheduler.getCarbonImpactHistory().windowsFor("job-a")).isEmpty();
+    }
+
+    @Test
+    void todaysWindowIsNeverProcessed() throws Exception {
+        LocalDate today = LocalDate.of(2026, 9, 5); // matches the fixed clock in setUp()
+        registerCarbonImpactJob("job-a", true);
+        Instant windowStart = today.atStartOfDay(UTC).plusHours(1).toInstant();
+        scheduler.getCarbonImpactHistory().record("job-a", windowStart, windowStart.plusSeconds(60));
+
+        newInvoker().invoke(fakeExecution()).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertThat(publishedResults).isEmpty();
+        assertThat(scheduler.getCarbonImpactHistory().windowsFor("job-a")).hasSize(1);
+        assertThat(api.requestCount(ZONE, today)).isZero();
+    }
+
+    @Test
+    void multipleJobsInTheSameZoneAndDayShareOneApiCall() throws Exception {
+        LocalDate yesterday = LocalDate.of(2026, 9, 4);
+        api.respondWith(ZONE, yesterday, flatIntensity(yesterday, 100));
+
+        registerCarbonImpactJob("job-a", true);
+        registerCarbonImpactJob("job-b", true);
+        Instant start = yesterday.atStartOfDay(UTC).plusHours(5).toInstant();
+        scheduler.getCarbonImpactHistory().record("job-a", start, start.plusSeconds(60));
+        scheduler.getCarbonImpactHistory().record("job-b", start, start.plusSeconds(60));
+
+        newInvoker().invoke(fakeExecution()).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertThat(publishedResults).hasSize(2);
+        assertThat(api.requestCount(ZONE, yesterday)).isEqualTo(1);
+    }
+
+    @Test
+    void transientFailureIsRetriedAndEventuallySucceeds() throws Exception {
+        LocalDate yesterday = LocalDate.of(2026, 9, 4);
+        api.respondWith(ZONE, yesterday, flatIntensity(yesterday, 100));
+        api.failNextNTimes(ZONE, yesterday, 2); // fewer failures than configured retries
+
+        registerCarbonImpactJob("job-a", true);
+        Instant start = yesterday.atStartOfDay(UTC).plusHours(5).toInstant();
+        scheduler.getCarbonImpactHistory().record("job-a", start, start.plusSeconds(60));
+
+        CarbonImpactBatchInvoker invoker = newInvokerWithBackoffs(List.of(Duration.ofMillis(5), Duration.ofMillis(5)));
+        invoker.invoke(fakeExecution()).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertThat(publishedResults).hasSize(1);
+        assertThat(api.requestCount(ZONE, yesterday)).isEqualTo(3); // 1 initial attempt + 2 retries
+        assertThat(scheduler.getCarbonImpactHistory().windowsFor("job-a")).isEmpty();
+    }
+
+    @Test
+    void windowIsKeptForALaterRunAfterExhaustingAllRetries() throws Exception {
+        LocalDate yesterday = LocalDate.of(2026, 9, 4);
+        api.respondWith(ZONE, yesterday, flatIntensity(yesterday, 100));
+        api.failNextNTimes(ZONE, yesterday, 100); // more failures than configured retries
+
+        registerCarbonImpactJob("job-a", true);
+        Instant start = yesterday.atStartOfDay(UTC).plusHours(5).toInstant();
+        scheduler.getCarbonImpactHistory().record("job-a", start, start.plusSeconds(60));
+
+        CarbonImpactBatchInvoker invoker = newInvokerWithBackoffs(List.of(Duration.ofMillis(5), Duration.ofMillis(5)));
+        invoker.invoke(fakeExecution()).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertThat(publishedResults).isEmpty();
+        assertThat(scheduler.getCarbonImpactHistory().windowsFor("job-a")).hasSize(1);
+    }
+
+    @Test
+    void windowBeyondTheBacklogWindowIsAbandonedWithoutCallingTheApi() throws Exception {
+        // clock is fixed at 2026-09-05; default backlog window is 7 days, so anything older than 2026-08-28 (today
+        // - 7 - 1) is abandoned outright.
+        LocalDate tooOld = LocalDate.of(2026, 8, 20);
+        registerCarbonImpactJob("job-a", true);
+        Instant start = tooOld.atStartOfDay(UTC).plusHours(5).toInstant();
+        scheduler.getCarbonImpactHistory().record("job-a", start, start.plusSeconds(60));
+
+        newInvoker().invoke(fakeExecution()).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertThat(publishedResults).isEmpty();
+        assertThat(scheduler.getCarbonImpactHistory().windowsFor("job-a")).isEmpty();
+        assertThat(api.requestCount(ZONE, tooOld)).isZero();
+    }
+
+    @Test
+    void savingsIsPositiveWhenTheGreenMomentIsCheaperThanTheBaseline() throws Exception {
+        LocalDate yesterday = LocalDate.of(2026, 9, 4);
+        // hour 2 is cheap (10), hour 10 (the fallback/baseline hour for this fixedWindow job, see
+        // GreenScheduledAnnotationParser's daily-average fallback cron) is expensive (500).
+        CarbonIntensity intensity = flatIntensity(yesterday, 10);
+        intensity.getData().set(10, BigDecimal.valueOf(500));
+        api.respondWith(ZONE, yesterday, intensity);
+
+        // fixedWindow 01:00-03:00, with an explicit fallback cron at 10:00 (the expensive hour) - without an
+        // explicit cron, the fallback defaults to the window's own midpoint (02:00), which would coincide with the
+        // actual fire time below and make this test meaningless (baseline == actual, savings == 0 either way).
+        GreenScheduled greenScheduled = AnnotationUtil.newGreenScheduled()
+                .identity("job-a")
+                .fixedWindow("01:00 03:00")
+                .duration("30m")
+                .cron("0 0 10 * * ?")
+                .carbonIntensityZone(ZONE)
+                .timeZone("UTC")
+                .build();
+        GreenObserved greenObserved = AnnotationUtil.newGreenObserved().carbonImpact(true).build();
+        scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", "job-a", List.of(greenScheduled),
+                greenObserved));
+
+        // the job actually fired at 02:00 (cheap hour) instead of its 10:00 baseline (expensive hour)
+        Instant actualStart = yesterday.atStartOfDay(UTC).plusHours(2).toInstant();
+        scheduler.getCarbonImpactHistory().record("job-a", actualStart, actualStart.plusSeconds(1800));
+
+        newInvoker().invoke(fakeExecution()).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertThat(publishedResults).hasSize(1);
+        CarbonImpactResult result = publishedResults.get(0);
+        assertThat(result.impactGrams()).isEqualTo(5.0); // 0.5h * 10
+        assertThat(result.savingsGrams()).isGreaterThan(0); // baseline (0.5h * 500 = 250) is far more expensive
+    }
+
+    @Test
+    void baselineOnADifferentDayIsFetchedSeparatelyFromTheActualDay() throws Exception {
+        LocalDate actualDay = LocalDate.of(2026, 9, 4);
+        LocalDate baselineDay = LocalDate.of(2026, 9, 5);
+        api.respondWith(ZONE, actualDay, flatIntensity(actualDay, 10)); // cheap
+        api.respondWith(ZONE, baselineDay, flatIntensity(baselineDay, 500)); // expensive, clearly distinguishable
+
+        // fixedWindow job in Asia/Tokyo (UTC+9), with an explicit fallback cron at 10:00 (its own zone) - so its
+        // naive baseline is computed in Asia/Tokyo, independently of the scheduler's own UTC clock zone.
+        GreenScheduled greenScheduled = AnnotationUtil.newGreenScheduled()
+                .identity("job-a")
+                .fixedWindow("01:00 03:00")
+                .duration("30m")
+                .cron("0 0 10 * * ?")
+                .carbonIntensityZone(ZONE)
+                .timeZone("Asia/Tokyo")
+                .build();
+        GreenObserved greenObserved = AnnotationUtil.newGreenObserved().carbonImpact(true).build();
+        scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", "job-a", List.of(greenScheduled),
+                greenObserved));
+
+        // 23:30 UTC on the 4th is bucketed (by the scheduler's own UTC clock zone) as belonging to actualDay, but
+        // that same instant is 08:30 on the 5th in Asia/Tokyo - so the fallback cron's 10:00 occurrence in that zone
+        // (the naive baseline) falls a full calendar day later, on baselineDay.
+        Instant actualStart = actualDay.atStartOfDay(UTC).plusHours(23).plusMinutes(30).toInstant();
+        scheduler.getCarbonImpactHistory().record("job-a", actualStart, actualStart.plusSeconds(1800));
+
+        newInvoker().invoke(fakeExecution()).toCompletableFuture().get(5, TimeUnit.SECONDS);
+
+        assertThat(publishedResults).hasSize(1);
+        assertThat(api.requestCount(ZONE, actualDay)).isEqualTo(1);
+        assertThat(api.requestCount(ZONE, baselineDay)).isEqualTo(1); // fetched separately, not reused from actualDay
+        CarbonImpactResult result = publishedResults.get(0);
+        assertThat(result.impactGrams()).isEqualTo(5.0); // 0.5h * 10
+        // Before the day/zone-mismatch fix, the baseline window would have silently fallen outside actualDay's
+        // fetched data and scored 0, making this negative (0 - 5). Fetched correctly, it's clearly positive.
+        assertThat(result.savingsGrams()).isEqualTo(245.0); // 0.5h * 500 (baseline) - 0.5h * 10 (actual)
+    }
+
+    private SimpleScheduler.SimpleTrigger registerCarbonImpactJob(String identity, boolean carbonImpact) {
+        GreenScheduled greenScheduled = AnnotationUtil.newGreenScheduled()
+                .identity(identity)
+                .successive("0h 1h 1h")
+                .duration("30m")
+                .carbonIntensityZone(ZONE)
+                .build();
+        GreenObserved greenObserved = AnnotationUtil.newGreenObserved().carbonImpact(carbonImpact).build();
+        scheduler.scheduleMethod(new ImmutableScheduledMethod(noopInvoker(), "Test", identity, List.of(greenScheduled),
+                greenObserved));
+        return (SimpleScheduler.SimpleTrigger) scheduler.getScheduledJob(identity);
+    }
+
+    private CarbonImpactBatchInvoker newInvoker() {
+        return newInvokerWithBackoffs(SchedulerDefaults.DEFAULT_CARBON_IMPACT_RETRY_BACKOFFS);
+    }
+
+    private CarbonImpactBatchInvoker newInvokerWithBackoffs(List<Duration> backoffs) {
+        return new CarbonImpactBatchInvoker(scheduler, scheduler.getCarbonImpactHistory(), new Events(scheduler),
+                Clock.fixed(Instant.parse("2026-09-05T00:00:00Z"), UTC), api, backoffs,
+                SchedulerDefaults.DEFAULT_CARBON_IMPACT_BACKLOG_WINDOW_DAYS, retryExecutor);
+    }
+
+    private static CarbonIntensity flatIntensity(LocalDate date, int value) {
+        CarbonIntensity intensity = new CarbonIntensity();
+        intensity.setStart(date.atStartOfDay(UTC).toInstant());
+        intensity.setResolution(Duration.ofHours(1));
+        List<BigDecimal> data = new ArrayList<>();
+        for (int i = 0; i < 24; i++) {
+            data.add(BigDecimal.valueOf(value));
+        }
+        intensity.setData(data);
+        return intensity;
+    }
+
+    private ScheduledInvoker noopInvoker() {
+        return execution -> java.util.concurrent.CompletableFuture.completedFuture(null);
+    }
+
+    private ScheduledExecution fakeExecution() {
+        return new ScheduledExecution() {
+            @Override
+            public Trigger getTrigger() {
+                return null;
+            }
+
+            @Override
+            public Instant getFireTime() {
+                return Instant.now();
+            }
+
+            @Override
+            public Instant getScheduledFireTime() {
+                return Instant.now();
+            }
+        };
+    }
+}

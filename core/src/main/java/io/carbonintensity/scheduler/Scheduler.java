@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import io.carbonintensity.executionplanner.spi.CarbonIntensityPlanner;
+import io.carbonintensity.scheduler.observability.CarbonImpactResult;
 
 /**
  * A basic scheduler.
@@ -106,6 +107,17 @@ public interface Scheduler {
         }
 
         default void jobExecutionSuccessful(ScheduledExecution execution) {
+        }
+
+        /**
+         * Fired once the internal daily batch has (re)computed a job's carbon-impact/savings figures - see
+         * {@link io.carbonintensity.scheduler.observability.GreenObserved#carbonImpact()}. Never fired for the
+         * current day.
+         *
+         * @param trigger the trigger of the job the result was computed for
+         * @param result the computed result
+         */
+        default void jobCarbonImpactCalculated(Trigger trigger, CarbonImpactResult result) {
         }
 
         default void schedulerPaused() {

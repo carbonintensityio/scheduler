@@ -1,6 +1,10 @@
 package io.carbonintensity.scheduler;
 
 import java.time.Instant;
+import java.util.Optional;
+
+import io.carbonintensity.scheduler.observability.CarbonImpactResult;
+import io.carbonintensity.scheduler.observability.GreenObserved;
 
 /**
  * Trigger is bound to a scheduled job.
@@ -49,6 +53,17 @@ public interface Trigger {
      */
     default String getMethodDescription() {
         return null;
+    }
+
+    /**
+     * The most recently computed carbon-impact result for this job, if {@link GreenObserved#carbonImpact()} is
+     * enabled for it. Always at least one day old - see {@link GreenObserved#carbonImpact()}.
+     *
+     * @return the last computed result, or empty if none has been computed yet (or {@code carbonImpact} is disabled)
+     * @see GreenObserved
+     */
+    default Optional<CarbonImpactResult> getLastCarbonImpact() {
+        return Optional.empty();
     }
 
 }

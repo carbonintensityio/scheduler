@@ -6,6 +6,7 @@ import java.util.List;
 import com.cronutils.utils.StringUtils;
 
 import io.carbonintensity.scheduler.GreenScheduled;
+import io.carbonintensity.scheduler.observability.GreenObserved;
 
 /**
  * Utility class for validating {@link GreenScheduled} annotations.
@@ -45,6 +46,44 @@ public class GreenScheduledAnnotationValidation {
         }
 
         return validationErrors;
+    }
+
+    /**
+     * Validates the usage of {@link GreenObserved} against the {@link GreenScheduled} schedule(s) declared on the
+     * same method.
+     * <p>
+     * A method can carry more than one {@link GreenScheduled} (via the repeatable {@code GreenSchedules}), each of
+     * which becomes its own, independently scheduled job. A single {@link GreenObserved} applies uniformly to all of
+     * them, so every one of them is checked individually.
+     *
+     * @param greenScheduled the {@link GreenScheduled} annotation(s) present on the same method, possibly empty
+     * @param greenObserved the {@link GreenObserved} annotation to validate
+     * @return the validation errors, empty if the usage is valid
+     */
+    static List<String> validateGreenObserved(GreenScheduled[] greenScheduled, GreenObserved greenObserved) {
+        List<String> validationErrors = new ArrayList<>();
+
+        if (greenScheduled == null || greenScheduled.length == 0) {
+            validationErrors.add("@GreenObserved requires @GreenScheduled to be present on the same method");
+            return validationErrors;
+        }
+
+        if (greenObserved.carbonImpact()) {
+            for (GreenScheduled schedule : greenScheduled) {
+                if (isCronOnly(schedule)) {
+                    validationErrors.add("@GreenObserved(carbonImpact = true) requires the @GreenScheduled schedule '"
+                            + schedule.identity()
+                            + "' to use fixedWindow or successive; a plain cron-only schedule has no carbon-aware "
+                            + "baseline to compare savings against");
+                }
+            }
+        }
+
+        return validationErrors;
+    }
+
+    private static boolean isCronOnly(GreenScheduled annotation) {
+        return StringUtils.isEmpty(annotation.fixedWindow()) && StringUtils.isEmpty(annotation.successive());
     }
 
 }

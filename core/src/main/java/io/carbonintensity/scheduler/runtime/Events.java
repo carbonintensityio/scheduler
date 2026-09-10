@@ -3,6 +3,7 @@ package io.carbonintensity.scheduler.runtime;
 import io.carbonintensity.scheduler.ScheduledExecution;
 import io.carbonintensity.scheduler.Scheduler;
 import io.carbonintensity.scheduler.Trigger;
+import io.carbonintensity.scheduler.observability.CarbonImpactResult;
 
 /**
  * Utility class for firing events related to job execution and scheduler state changes.
@@ -83,6 +84,12 @@ public final class Events {
     void fireJobExecutionSkipped(ScheduledExecution execution, String details) {
         for (Scheduler.EventListener listener : simpleScheduler.getEventListeners()) {
             listener.jobExecutionSkipped(execution, details);
+        }
+    }
+
+    void fireJobCarbonImpactCalculated(Trigger trigger, CarbonImpactResult result) {
+        for (Scheduler.EventListener listener : simpleScheduler.getEventListeners()) {
+            listener.jobCarbonImpactCalculated(trigger, result);
         }
     }
 }

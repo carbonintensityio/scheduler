@@ -80,6 +80,12 @@ is followed for every pull request.
 
 ### Coding Guidelines
 
+* Public annotations get a `Green` prefix (e.g. `@GreenScheduled`, `@GreenObserved`), following the pattern used by
+  libraries like Hystrix (`@HystrixCommand`), Feign (`@FeignClient`), and Spring (`@KafkaListener`, `@RabbitListener`).
+  This also avoids name collisions with annotations from other libraries in the same ecosystem (Micrometer's own
+  `@Observed`, for example).
+* Domain terminology (what a term means, which term to prefer over a similar one) is tracked in [`CONTEXT.md`](./CONTEXT.md) -
+  check it before introducing a new core concept, and add to it when you resolve a naming question.
 * We decided to disallow `@author` tags in the Javadoc: they are hard to maintain, especially in a very active project,
   and we use the Git history to track authorship. GitHub also
   has [this nice page with your contributions](https://github.com/carbonintensityio/green-scheduler/graphs/contributors). For each major
