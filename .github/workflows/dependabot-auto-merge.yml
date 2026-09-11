@@ -12,6 +12,11 @@ name: Dependabot auto-merge
 # (Settings > General > Pull Requests) - that's an admin-only toggle this workflow can't set
 # itself. Until then, `gh pr merge --auto` below will fail harmlessly and the PR just waits for a
 # manual merge like before.
+#
+# Auto-merge alone wasn't enough: branch protection requires an approving review before anything
+# merges, and nobody was approving these, so the backlog just moved from "unmerged" to "enabled,
+# still blocked". The approval step below covers that for the same routine set - a human still
+# has the final say on anything framework-related.
 
 on:
   pull_request:
@@ -35,6 +40,18 @@ jobs:
         uses: dependabot/fetch-metadata@v2
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Approve routine bumps
+        if: |
+          steps.metadata.outputs.update-type != 'version-update:semver-major' &&
+          !contains(steps.metadata.outputs.dependency-names, 'quarkus') &&
+          !contains(steps.metadata.outputs.dependency-names, 'spring.boot') &&
+          !contains(steps.metadata.outputs.dependency-names, 'spring-boot') &&
+          !contains(steps.metadata.outputs.dependency-names, 'micronaut')
+        run: gh pr review --approve "$PR_URL" --body "Auto-approved - routine dependency bump, not one of the excluded frameworks."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable auto-merge for routine bumps
         if: |
