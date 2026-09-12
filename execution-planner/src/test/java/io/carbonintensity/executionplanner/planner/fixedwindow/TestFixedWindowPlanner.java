@@ -28,6 +28,7 @@ import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetch
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityJsonParser;
 import io.carbonintensity.executionplanner.spi.CarbonIntensityPlanner;
 import io.carbonintensity.executionplanner.spi.ConcurrencySlotTracker;
+import io.carbonintensity.executionplanner.spi.PlannedExecution;
 
 @ExtendWith(MockitoExtension.class)
 class TestFixedWindowPlanner {
@@ -39,6 +40,10 @@ class TestFixedWindowPlanner {
     public void setup() {
         carbonIntensityDataFetcher = mock(CarbonIntensityDataFetcher.class);
         defaultCarbonIntensityScheduler = new FixedWindowPlanner(carbonIntensityDataFetcher);
+    }
+
+    private static ZonedDateTime fireTime(PlannedExecution execution) {
+        return execution == null ? null : execution.fireTime();
     }
 
     private static FixedWindowPlanningConstraints constraintsFor(String identity, ZonedDateTime start, ZonedDateTime end) {
@@ -88,8 +93,8 @@ class TestFixedWindowPlanner {
         var constraintsA = constraintsFor("job-a", ws, we);
         var constraintsB = constraintsFor("job-b", ws, we);
 
-        ZonedDateTime timeA = plannerA.getNextExecutionTime(constraintsA);
-        ZonedDateTime timeB = plannerB.getNextExecutionTime(constraintsB);
+        ZonedDateTime timeA = fireTime(plannerA.getNextExecutionTime(constraintsA));
+        ZonedDateTime timeB = fireTime(plannerB.getNextExecutionTime(constraintsB));
 
         assertThat(timeA).isNotNull();
         assertThat(timeB).isNotNull();
@@ -114,8 +119,8 @@ class TestFixedWindowPlanner {
         var constraintsA = constraintsFor("job-a", "NL", ws, we);
         var constraintsB = constraintsFor("job-b", "DE", ws, we);
 
-        ZonedDateTime timeA = plannerA.getNextExecutionTime(constraintsA);
-        ZonedDateTime timeB = plannerB.getNextExecutionTime(constraintsB);
+        ZonedDateTime timeA = fireTime(plannerA.getNextExecutionTime(constraintsA));
+        ZonedDateTime timeB = fireTime(plannerB.getNextExecutionTime(constraintsB));
 
         assertThat(timeA).isNotNull();
         assertThat(timeB).isNotNull();
@@ -142,8 +147,8 @@ class TestFixedWindowPlanner {
         CarbonIntensityPlanner<FixedWindowPlanningConstraints> plannerB = new FixedWindowPlanner(sharedFetcher, tracker,
                 maxConcurrentPerSlot);
 
-        ZonedDateTime timeA = plannerA.getNextExecutionTime(constraintsFor("job-a", ws, we));
-        ZonedDateTime timeB = plannerB.getNextExecutionTime(constraintsFor("job-b", ws, we));
+        ZonedDateTime timeA = fireTime(plannerA.getNextExecutionTime(constraintsFor("job-a", ws, we)));
+        ZonedDateTime timeB = fireTime(plannerB.getNextExecutionTime(constraintsFor("job-b", ws, we)));
 
         assertThat(timeA).isNotNull();
         assertThat(timeB).isNotNull();
@@ -185,9 +190,9 @@ class TestFixedWindowPlanner {
         ZonedDateTime we = ws.plusHours(4);
         Duration duration = Duration.ofHours(1);
 
-        ZonedDateTime timeA = plannerA.getNextExecutionTime(constraintsFor("job-a", ws, we, duration));
-        ZonedDateTime timeB = plannerB.getNextExecutionTime(constraintsFor("job-b", ws, we, duration));
-        ZonedDateTime timeC = plannerC.getNextExecutionTime(constraintsFor("job-c", ws, we, duration));
+        ZonedDateTime timeA = fireTime(plannerA.getNextExecutionTime(constraintsFor("job-a", ws, we, duration)));
+        ZonedDateTime timeB = fireTime(plannerB.getNextExecutionTime(constraintsFor("job-b", ws, we, duration)));
+        ZonedDateTime timeC = fireTime(plannerC.getNextExecutionTime(constraintsFor("job-c", ws, we, duration)));
 
         // the three tied (CI 50) slots are claimed in chronological order: 01:00, then 02:00, then 03:00
         assertThat(timeA).isEqualTo(ws.plusHours(1));
@@ -225,7 +230,7 @@ class TestFixedWindowPlanner {
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
 
-        ZonedDateTime nextExecutionTime = defaultCarbonIntensityScheduler.getNextExecutionTime(constraints);
+        ZonedDateTime nextExecutionTime = fireTime(defaultCarbonIntensityScheduler.getNextExecutionTime(constraints));
         assertThat(nextExecutionTime).isNotNull();
         assertThat(nextExecutionTime).isAfter(now.minusMinutes(1));
         assertThat(nextExecutionTime).isBefore(now.plusDays(1));
@@ -261,7 +266,7 @@ class TestFixedWindowPlanner {
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
 
-        ZonedDateTime nextExecutionTime = defaultCarbonIntensityScheduler.getNextExecutionTime(constraints);
+        ZonedDateTime nextExecutionTime = fireTime(defaultCarbonIntensityScheduler.getNextExecutionTime(constraints));
         assertThat(nextExecutionTime).isNotNull();
         assertThat(nextExecutionTime.getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
         assertThat(nextExecutionTime).isAfter(now.minusMinutes(1));
@@ -298,7 +303,7 @@ class TestFixedWindowPlanner {
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
 
-        ZonedDateTime nextExecutionTime = defaultCarbonIntensityScheduler.getNextExecutionTime(constraints);
+        ZonedDateTime nextExecutionTime = fireTime(defaultCarbonIntensityScheduler.getNextExecutionTime(constraints));
         assertThat(nextExecutionTime).isNotNull();
         assertThat(nextExecutionTime.getDayOfMonth()).isEqualTo(1);
         assertThat(nextExecutionTime).isAfter(now.minusMinutes(1));
@@ -335,7 +340,7 @@ class TestFixedWindowPlanner {
                 .withTimeZoneId(ZoneId.of("UTC"))
                 .build();
 
-        ZonedDateTime nextExecutionTime = defaultCarbonIntensityScheduler.getNextExecutionTime(constraints);
+        ZonedDateTime nextExecutionTime = fireTime(defaultCarbonIntensityScheduler.getNextExecutionTime(constraints));
         assertThat(nextExecutionTime).isNotNull();
         assertThat(nextExecutionTime.getDayOfWeek()).isNotEqualTo(DayOfWeek.SUNDAY);
         assertThat(nextExecutionTime).isAfter(date.minusMinutes(1));

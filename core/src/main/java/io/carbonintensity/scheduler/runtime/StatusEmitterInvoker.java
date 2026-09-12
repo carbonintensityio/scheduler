@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.carbonintensity.scheduler.ScheduledExecution;
+import io.carbonintensity.scheduler.Trigger;
 
 /**
  * An invoker wrapper that fires events when an execution of a scheduled method is finished.
@@ -22,11 +23,15 @@ public final class StatusEmitterInvoker extends DelegateInvoker {
 
     @Override
     public CompletionStage<Void> invoke(ScheduledExecution execution) {
-        log.trace("Running status emitter invoker for {} at {}.", execution.getTrigger().getId(),
-                execution.getScheduledFireTime());
+        Trigger trigger = execution.getTrigger();
+        if (log.isTraceEnabled()) {
+            log.trace("Running status emitter invoker for {} at {}.", trigger.getId(), execution.getScheduledFireTime());
+        }
         return invokeDelegate(execution).whenComplete((v, t) -> {
+            // re-establish MDC in case this runs on a different thread
+            MdcEnrichingInvoker.putMdc(trigger);
             if (t != null) {
-                log.error("Error occurred while executing task for trigger {}", execution.getTrigger(), t);
+                log.error("Error occurred while executing task for trigger {}", trigger, t);
                 events.fireJobExecutionFailed(execution, t);
             } else {
                 events.fireJobExecutionSuccessful(execution);

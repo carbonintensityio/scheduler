@@ -2,6 +2,8 @@ package io.carbonintensity.scheduler;
 
 import java.time.Instant;
 
+import io.carbonintensity.scheduler.observability.DecisionStrategy;
+
 /**
  * Trigger is bound to a scheduled job.
  * <p>
@@ -48,6 +50,25 @@ public interface Trigger {
      * @return the method description or {@code null} for a trigger of a programmatically added job
      */
     default String getMethodDescription() {
+        return null;
+    }
+
+    /**
+     * @return the top-level {@link DecisionStrategy} this trigger is
+     *         configured with, or {@code null} for a trigger that makes no
+     *         carbon-aware decision of its own (e.g. an internal,
+     *         non-adopter-facing trigger)
+     */
+    default DecisionStrategy getDecisionStrategy() {
+        return null;
+    }
+
+    /**
+     * @return the carbon-intensity zone this trigger is configured with, or
+     *         {@code null} if not applicable
+     * @see GreenScheduled#carbonIntensityZone()
+     */
+    default String getCarbonIntensityZone() {
         return null;
     }
 

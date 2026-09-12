@@ -93,6 +93,32 @@ class TestSingleJobStrategy {
         );
     }
 
+    @Test
+    void testRankedTimeslotsSortsGenuineDataGapsLast() {
+        // a single 30-minute data point at 00:00 - candidates starting at 01:00 and 02:00 have no overlapping
+        // data at all, a genuine gap that must not be conflated with a real zero-intensity slot
+        CarbonIntensity carbonIntensity = new CarbonIntensity();
+        carbonIntensity.setZone("NL");
+        carbonIntensity.setResolution(Duration.ofMinutes(30));
+        carbonIntensity.setStart(Instant.parse("2024-01-01T00:00:00Z"));
+        carbonIntensity.setEnd(Instant.parse("2024-01-01T00:30:00Z"));
+        carbonIntensity.setData(List.of(new BigDecimal("50")));
+
+        ZonedDateTime ws = ZonedDateTime.parse("2024-01-01T00:00:00Z");
+        ZonedDateTime we = ws.plusHours(2);
+        Duration d = Duration.ofHours(1);
+
+        SingleJobStrategy strategy = new SingleJobStrategy(Duration.ofHours(1));
+        List<Timeslot> ranked = strategy.rankedTimeslots(ws, we, d, carbonIntensity);
+
+        assertThat(ranked).hasSize(3);
+        // the one slot overlapping actual data sorts first; the two with no overlapping data at all sort last,
+        // rather than throwing a NullPointerException or being indistinguishable from a real zero
+        assertThat(ranked.get(0).carbonIntensity()).isNotNull();
+        assertThat(ranked.get(1).carbonIntensity()).isNull();
+        assertThat(ranked.get(2).carbonIntensity()).isNull();
+    }
+
     private CarbonIntensity loadCarbonIntensityFromFile(String fileName) {
         return ciParser.parse(ClassLoader.getSystemResourceAsStream(fileName));
     }

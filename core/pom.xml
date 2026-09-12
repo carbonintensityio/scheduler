@@ -77,8 +77,11 @@
             <artifactId>parsson</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <!-- Not slf4j-simple: its MDC adapter is a no-op, and DecisionTimelineWiringTest needs a real one to
+                 verify the identity MDC key is actually populated during a job's invocation. -->
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.5.18</version>
             <scope>test</scope>
         </dependency>
         <dependency>

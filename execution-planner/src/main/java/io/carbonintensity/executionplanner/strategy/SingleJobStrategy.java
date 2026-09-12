@@ -54,8 +54,10 @@ public class SingleJobStrategy implements PlanningStrategy {
             CarbonIntensity carbonIntensity) {
         // create timeslots and calculate carbon intensity
         List<Timeslot> timeslots = new ArrayList<>(getTimeslots(ws, we, duration, resolution, carbonIntensity));
-        // stable sort: on equal carbon intensity, the chronologically first slot stays first
-        timeslots.sort(Comparator.comparing(Timeslot::carbonIntensity));
+        // stable sort: on equal carbon intensity, the chronologically first slot stays first. A null
+        // carbonIntensity (a genuine data gap, see Timeslot#carbonIntensity) sorts last - a slot we have no data
+        // for can't be called "green", so it's only ever picked when every other candidate is equally unknown.
+        timeslots.sort(Comparator.comparing(Timeslot::carbonIntensity, Comparator.nullsLast(Comparator.naturalOrder())));
         return timeslots;
     }
 

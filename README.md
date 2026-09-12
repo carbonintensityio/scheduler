@@ -244,6 +244,31 @@ running at all (a warning is logged when this happens). This only coordinates jo
 instance - it does not coordinate across multiple instances/replicas of the same application; combine it with
 [ShedLock](#concurrent-executions) if you also run multiple instances.
 
+### Logging
+Not sure whether (or when) a job will actually run? Every real fire is logged at `DEBUG` on
+`io.carbonintensity.scheduler.runtime.SimpleScheduler`, with a short reason (a green slot was found, or a fallback
+to the job's configured cron/plain interval spacing was used):
+
+```properties
+# Spring Boot (application.properties)
+logging.level.io.carbonintensity.scheduler.runtime.SimpleScheduler=DEBUG
+```
+
+```properties
+# Quarkus (application.properties)
+quarkus.log.category."io.carbonintensity.scheduler.runtime.SimpleScheduler".level=DEBUG
+```
+
+Every log line emitted while a job is running also carries its `identity`, `strategy` and `zone` in the
+[SLF4J MDC](https://www.slf4j.org/manual.html#mdc), so a logging backend that renders MDC (most JSON/structured
+formatters do) can filter or group by them without any extra configuration.
+
+Beyond logging, every job's history of fired decisions (when, which strategy, and why) is available programmatically
+as its **decision timeline** - see `DecisionTimelineStore`/`DecisionTimelineEntry` (`io.carbonintensity.scheduler.observability`)
+and `Scheduler.EventListener#jobDecisionRecorded`. This is always on, for every job, no annotation required. The
+default storage is in-memory only (bounded by both a retention window and an entry-count cap, both configurable on
+`SchedulerConfig`) - plug in your own `DecisionTimelineStore` implementation if you need it to survive a restart.
+
 ## Acknowledgements
 The maven project structure and all documentation regarding contribution is adapted from
 what the [Quarkus](https://github.com/quarkusio/quarkus) community has created. Further acknowledgements can be found in the [NOTICE](NOTICE) file

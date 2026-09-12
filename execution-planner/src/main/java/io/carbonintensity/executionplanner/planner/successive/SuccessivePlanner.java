@@ -12,6 +12,7 @@ import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetch
 import io.carbonintensity.executionplanner.runtime.impl.ZonedCarbonIntensityPeriod;
 import io.carbonintensity.executionplanner.spi.CarbonIntensityPlanner;
 import io.carbonintensity.executionplanner.spi.ConcurrencySlotTracker;
+import io.carbonintensity.executionplanner.spi.PlannedExecution;
 import io.carbonintensity.executionplanner.strategy.SingleJobStrategy;
 
 /**
@@ -69,7 +70,7 @@ public class SuccessivePlanner implements CarbonIntensityPlanner<SuccessivePlann
     }
 
     @Override
-    public ZonedDateTime getNextExecutionTime(SuccessivePlanningConstraints constraints) {
+    public PlannedExecution getNextExecutionTime(SuccessivePlanningConstraints constraints) {
         ZonedDateTime ws;
         ZonedDateTime we;
 
@@ -94,13 +95,13 @@ public class SuccessivePlanner implements CarbonIntensityPlanner<SuccessivePlann
 
         if (slotTracker == null || maxConcurrentPerSlot <= 0) {
             Timeslot best = strategy.bestTimeslot(ws, we, constraints.getDuration(), carbonIntensity);
-            return best == null ? null : best.start();
+            return best == null ? null : PlannedExecution.from(best);
         }
 
         return pickTimeslot(strategy, constraints, ws, we, carbonIntensity);
     }
 
-    private ZonedDateTime pickTimeslot(SingleJobStrategy strategy, SuccessivePlanningConstraints constraints,
+    private PlannedExecution pickTimeslot(SingleJobStrategy strategy, SuccessivePlanningConstraints constraints,
             ZonedDateTime ws, ZonedDateTime we, CarbonIntensity carbonIntensity) {
         List<Timeslot> ranked = strategy.rankedTimeslots(ws, we, constraints.getDuration(), carbonIntensity);
         if (ranked.isEmpty()) {
@@ -111,7 +112,7 @@ public class SuccessivePlanner implements CarbonIntensityPlanner<SuccessivePlann
         String identity = constraints.getIdentity();
         for (Timeslot candidate : ranked) {
             if (slotTracker.tryReserve(zone, identity, candidate.start().toInstant(), maxConcurrentPerSlot)) {
-                return candidate.start();
+                return PlannedExecution.from(candidate);
             }
         }
 
@@ -122,7 +123,7 @@ public class SuccessivePlanner implements CarbonIntensityPlanner<SuccessivePlann
                 "Concurrency limit of {} per slot exceeded for zone {} at {} - scheduling '{}' anyway to honor its gap window",
                 maxConcurrentPerSlot, zone, best.start(), identity);
         slotTracker.reserve(zone, identity, best.start().toInstant());
-        return best.start();
+        return PlannedExecution.from(best);
     }
 
 }

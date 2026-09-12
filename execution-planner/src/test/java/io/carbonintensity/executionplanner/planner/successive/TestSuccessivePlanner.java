@@ -17,6 +17,7 @@ import io.carbonintensity.executionplanner.runtime.impl.CarbonIntensityDataFetch
 import io.carbonintensity.executionplanner.runtime.impl.rest.CarbonIntensityJsonParser;
 import io.carbonintensity.executionplanner.spi.CarbonIntensityPlanner;
 import io.carbonintensity.executionplanner.spi.ConcurrencySlotTracker;
+import io.carbonintensity.executionplanner.spi.PlannedExecution;
 
 @ExtendWith(MockitoExtension.class)
 class TestSuccessivePlanner {
@@ -28,6 +29,10 @@ class TestSuccessivePlanner {
     public void setup() {
         carbonIntensityDataFetcher = mock(CarbonIntensityDataFetcher.class);
         defaultCarbonIntensityScheduler = new SuccessivePlanner(carbonIntensityDataFetcher);
+    }
+
+    private static ZonedDateTime fireTime(PlannedExecution execution) {
+        return execution == null ? null : execution.fireTime();
     }
 
     private static SuccessivePlanningConstraints constraintsFor(String identity, ZonedDateTime lastExecutionTime,
@@ -62,7 +67,7 @@ class TestSuccessivePlanner {
                 .withCarbonIntensityZone("NL")
                 .build();
 
-        ZonedDateTime nextExecutionTime = defaultCarbonIntensityScheduler.getNextExecutionTime(constraints);
+        ZonedDateTime nextExecutionTime = fireTime(defaultCarbonIntensityScheduler.getNextExecutionTime(constraints));
 
         assertThat(nextExecutionTime).isNotNull();
         assertThat(nextExecutionTime.isBefore(now.plus(initialWarmup))).isTrue();
@@ -90,7 +95,7 @@ class TestSuccessivePlanner {
                 .withCarbonIntensityZone("NL")
                 .build();
 
-        ZonedDateTime nextExecutionTime = defaultCarbonIntensityScheduler.getNextExecutionTime(constraints);
+        ZonedDateTime nextExecutionTime = fireTime(defaultCarbonIntensityScheduler.getNextExecutionTime(constraints));
         assertThat(nextExecutionTime).isNotNull();
 
         // note: we allow the execution on the exact minGap, so should not be before (but equal or after)
@@ -113,8 +118,10 @@ class TestSuccessivePlanner {
         Duration minGap = Duration.ZERO;
         Duration maxGap = Duration.ofHours(6);
 
-        ZonedDateTime timeA = plannerA.getNextExecutionTime(constraintsFor("job-a", lastExecutionTime, minGap, maxGap));
-        ZonedDateTime timeB = plannerB.getNextExecutionTime(constraintsFor("job-b", lastExecutionTime, minGap, maxGap));
+        ZonedDateTime timeA = fireTime(
+                plannerA.getNextExecutionTime(constraintsFor("job-a", lastExecutionTime, minGap, maxGap)));
+        ZonedDateTime timeB = fireTime(
+                plannerB.getNextExecutionTime(constraintsFor("job-b", lastExecutionTime, minGap, maxGap)));
 
         assertThat(timeA).isNotNull();
         assertThat(timeB).isNotNull();
@@ -153,8 +160,10 @@ class TestSuccessivePlanner {
         CarbonIntensityPlanner<SuccessivePlanningConstraints> plannerB = new SuccessivePlanner(sharedFetcher, tracker,
                 maxConcurrentPerSlot);
 
-        ZonedDateTime timeA = plannerA.getNextExecutionTime(constraintsFor("job-a", lastExecutionTime, minGap, maxGap));
-        ZonedDateTime timeB = plannerB.getNextExecutionTime(constraintsFor("job-b", lastExecutionTime, minGap, maxGap));
+        ZonedDateTime timeA = fireTime(
+                plannerA.getNextExecutionTime(constraintsFor("job-a", lastExecutionTime, minGap, maxGap)));
+        ZonedDateTime timeB = fireTime(
+                plannerB.getNextExecutionTime(constraintsFor("job-b", lastExecutionTime, minGap, maxGap)));
 
         assertThat(timeA).isNotNull();
         assertThat(timeB).isNotNull();
