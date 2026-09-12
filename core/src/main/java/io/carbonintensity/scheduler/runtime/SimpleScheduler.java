@@ -157,10 +157,10 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
             if (id.isEmpty()) {
                 id = nameSequence + "_" + method.getMethodDescription();
             }
-            final var constraints = GreenScheduledAnnotationParser.createConstraints(id, scheduled, clock);
-            SimpleTrigger trigger = createTrigger(id, method.getMethodDescription(),
-                    GreenScheduledAnnotationParser.parseOverdueGracePeriod(scheduled, schedulerConfig.getOverdueGracePeriod()),
-                    constraints);
+            Duration overdueGracePeriod = GreenScheduledAnnotationParser.parseOverdueGracePeriod(scheduled,
+                    schedulerConfig.getOverdueGracePeriod());
+            final var constraints = GreenScheduledAnnotationParser.createConstraints(id, scheduled, clock, overdueGracePeriod);
+            SimpleTrigger trigger = createTrigger(id, method.getMethodDescription(), overdueGracePeriod, constraints);
             ScheduledInvoker invoker = initInvoker(method.getInvoker(), events,
                     scheduled.concurrentExecution(), initSkipPredicate(scheduled.skipExecutionIf()), jobInstrumenter);
             registerTask(trigger.id, new ScheduledTask(trigger, invoker, false));
@@ -548,10 +548,21 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         @Override
         public Instant getNextFireTime() {
             if (successivePlanner.canSchedule(constraints)) {
-                return successivePlanner.getNextExecutionTime(constraints).toInstant();
+                return successivePlanner.getNextExecutionTime(effectiveConstraints()).toInstant();
             }
             // fallback to interval trigger
             return super.getNextFireTime();
+        }
+
+        /**
+         * Folds lastFireTime into the query, like evaluate does. Without
+         * it, this kept reporting the first-ever slot as permanently
+         * overdue, no matter how many times the job had fired since.
+         */
+        private SuccessivePlanningConstraints effectiveConstraints() {
+            return lastFireTime == null
+                    ? constraints
+                    : DefaultSuccessivePlanningConstraints.from(constraints).withLastExecutionTime(lastFireTime).build();
         }
 
         @Override
@@ -570,10 +581,7 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
 
                 // sequential invocations
                 if (lastFireTime != null && now.plusSeconds(1).isAfter(lastFireTime.plus(constraints.getMinimumGap()))) {
-                    nextExecutionTime = successivePlanner
-                            .getNextExecutionTime(DefaultSuccessivePlanningConstraints.from(constraints)
-                                    .withLastExecutionTime(lastFireTime)
-                                    .build());
+                    nextExecutionTime = successivePlanner.getNextExecutionTime(effectiveConstraints());
                 }
 
                 if (nextExecutionTime != null) {
