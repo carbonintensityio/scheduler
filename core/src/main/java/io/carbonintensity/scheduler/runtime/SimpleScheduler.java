@@ -555,9 +555,11 @@ public class SimpleScheduler implements Scheduler, AutoCloseable {
         }
 
         /**
-         * Folds lastFireTime into the query, like evaluate does. Without
-         * it, this kept reporting the first-ever slot as permanently
-         * overdue, no matter how many times the job had fired since.
+         * Folds lastFireTime into the query, like evaluate does - without it,
+         * next-fire queries kept reporting the first-ever slot as permanently
+         * overdue, no matter how many times the job fired.
+         *
+         * @return constraints reflecting the most recent fire, or the original ones
          */
         private SuccessivePlanningConstraints effectiveConstraints() {
             return lastFireTime == null
